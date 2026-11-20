@@ -1,0 +1,4 @@
+import AnvBandit.ObservedGlobal
+#check @AnvBandit.ObservedRegret.original_team_regret_global_bound
+#print axioms AnvBandit.ObservedRegret.original_team_regret_global_bound
+#print axioms AnvBandit.TrajectoryExpectation.teamRegret_nonneg

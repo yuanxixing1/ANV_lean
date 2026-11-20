@@ -1,0 +1,11 @@
+import AnvBandit.GlobalRegret
+#check @AnvBandit.GlobalRegret.weightedLoss_global_personal_candidate
+#print axioms AnvBandit.GlobalRegret.weightedLoss_global_personal_candidate
+#print AnvBandit.GlobalRegret.weightedLoss
+#print AnvBandit.GlobalRegret.pathCost
+#check @AnvBandit.GlobalRegret.goodLoss_global_exact
+#check @AnvBandit.GlobalRegret.goodLoss_global_paper
+#check @AnvBandit.GlobalRegret.weightedLoss_le_goodLoss_add_failure
+#print axioms AnvBandit.GlobalRegret.goodLoss_global_exact
+#print axioms AnvBandit.GlobalRegret.goodLoss_global_paper
+#print axioms AnvBandit.GlobalRegret.weightedLoss_le_goodLoss_add_failure

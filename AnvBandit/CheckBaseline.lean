@@ -1,0 +1,25 @@
+import AnvBandit.BaselineEncoding
+import AnvBandit.BaselineRealizedReward
+import AnvBandit.BaselineSemantics
+#print AnvBandit.BaselineExecution.LocalState
+#print AnvBandit.BaselineExecution.State
+#print AnvBandit.BaselineExecution.LocalState.choose
+#print AnvBandit.BaselineExecution.step
+#print AnvBandit.BaselineLaw.stateMean
+#print AnvBandit.BaselineLaw.outcomeDistribution
+#print AnvBandit.BaselineLaw.actual_good_compl_le
+#print AnvBandit.BaselineRegret.weightedLoss_bound
+#print AnvBandit.BaselineTrajectory.teamRegret_bound
+#print AnvBandit.BaselineObserved.original_teamRegret_bound
+#print axioms AnvBandit.BaselineExecution.contacts_ignored
+#print axioms AnvBandit.BaselineExecution.action_local_information
+#print axioms AnvBandit.BaselineLaw.conditional_reward_law
+#print axioms AnvBandit.BaselineLaw.actual_good_compl_le
+#print axioms AnvBandit.BaselineRegret.weightedLoss_bound
+#print axioms AnvBandit.BaselineTrajectory.teamRegret_bound
+#print axioms AnvBandit.BaselineObserved.original_teamRegret_bound
+
+#print AnvBandit.BaselineLaw.canonical_original_law
+#print axioms AnvBandit.BaselineLaw.canonical_original_law
+#print AnvBandit.BaselineRealizedReward.original_realized_regret_bound
+#print axioms AnvBandit.BaselineRealizedReward.original_realized_regret_bound

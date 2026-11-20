@@ -1,0 +1,6 @@
+import AnvBandit.ObservedTrajectory
+#check @AnvBandit.ObservedRegret.original_teamRegret_eq
+#print axioms AnvBandit.ObservedRegret.original_teamRegret_eq
+#print axioms AnvBandit.ObservedRegret.original_pathReward_integral
+#print axioms AnvBandit.ObservedRegret.pathActions_prefix_congr
+#print axioms AnvBandit.ObservedRegret.pathReward_observed

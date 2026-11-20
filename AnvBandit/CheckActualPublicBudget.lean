@@ -1,0 +1,22 @@
+import AnvBandit.ActualPublicBudget
+
+set_option pp.proofs false
+#print AnvBandit.ActualPublicBudget.team_area_le
+#print AnvBandit.ActualPublicBudget.public_selection_core
+#print AnvBandit.ActualPublicBudget.selected_times_bound
+#print AnvBandit.ActualPublicBudget.weighted_selected_pairs_bound
+#print AnvBandit.ActualPublicBudget.holding_cost_le_F1
+#print AnvBandit.ActualPublicBudget.terminal_statistical_budget
+#print AnvBandit.ActualPublicBudget.terminal_public_selected_cost
+#print AnvBandit.ActualPublicBudget.terminal_lost_public_selected_cost
+#print axioms AnvBandit.ActualPublicBudget.team_area_le
+#print axioms AnvBandit.ActualPublicBudget.public_selection_core
+#print axioms AnvBandit.ActualPublicBudget.selected_times_bound
+#print axioms AnvBandit.ActualPublicBudget.weighted_selected_pairs_bound
+#print axioms AnvBandit.ActualPublicBudget.holding_cost_le_F1
+#print axioms AnvBandit.ActualPublicBudget.terminal_statistical_budget
+#print axioms AnvBandit.ActualPublicBudget.terminal_public_selected_cost
+#print axioms AnvBandit.ActualPublicBudget.terminal_lost_public_selected_cost
+
+#print AnvBandit.ActualPublicBudget.stable_tail_public_cost
+#print axioms AnvBandit.ActualPublicBudget.stable_tail_public_cost

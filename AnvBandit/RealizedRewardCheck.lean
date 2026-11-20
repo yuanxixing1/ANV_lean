@@ -1,0 +1,9 @@
+import AnvBandit.RealizedReward
+#check @AnvBandit.RealizedReward.Nfin_pathActions
+#check @AnvBandit.RealizedReward.pathReward_eq_actualMeans
+#check @AnvBandit.RealizedReward.expected_realized_eq_pathReward
+#print axioms AnvBandit.RealizedReward.Nfin_pathActions
+#print axioms AnvBandit.RealizedReward.pathReward_eq_actualMeans
+#print axioms AnvBandit.RealizedReward.expected_realized_eq_pathReward
+#check @AnvBandit.RealizedReward.expected_realized_eq_pathReward_original
+#print axioms AnvBandit.RealizedReward.expected_realized_eq_pathReward_original

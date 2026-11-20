@@ -1,0 +1,17 @@
+import AnvBandit.ExecutionObserved
+import AnvBandit.ExecutionProbability
+
+#check @AnvBandit.ExecutionLaw.retainedContact_iff_communicates
+#check @AnvBandit.ExecutionLaw.observedPath_run
+#check @AnvBandit.ExecutionLaw.observed_transition_of_original
+#check @AnvBandit.ExecutionLaw.finite_original_observed_law
+#check @AnvBandit.ExecutionLaw.finite_original_execution_state_law
+#check @AnvBandit.ExecutionLaw.finite_observed_statistic_transfer
+#print axioms AnvBandit.ExecutionLaw.retainedContact_iff_communicates
+#print axioms AnvBandit.ExecutionLaw.observedPath_run
+#print axioms AnvBandit.ExecutionLaw.observed_transition_of_original
+#print axioms AnvBandit.ExecutionLaw.finite_original_observed_law
+#print axioms AnvBandit.ExecutionLaw.finite_original_execution_state_law
+#print axioms AnvBandit.ExecutionLaw.finite_observed_statistic_transfer
+#check @AnvBandit.ExecutionLaw.observed_conditional_law
+#print axioms AnvBandit.ExecutionLaw.observed_conditional_law

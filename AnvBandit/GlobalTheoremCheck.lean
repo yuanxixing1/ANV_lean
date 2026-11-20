@@ -1,0 +1,7 @@
+import AnvBandit.GlobalTheorem
+#check @AnvBandit.GlobalTheorem.team_regret_global_bound
+#print axioms AnvBandit.GlobalTheorem.team_regret_global_bound
+#print axioms AnvBandit.TrajectoryExpectation.teamRegret_conversion
+#print AnvBandit.TrajectoryExpectation.teamRegret
+#print AnvBandit.TrajectoryExpectation.oracle
+#print AnvBandit.TrajectoryExpectation.pathReward

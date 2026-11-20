@@ -1,0 +1,19 @@
+import AnvBandit.ActualSublinear
+#print AnvBandit.ActualExplicitRegret.actual_explicit
+#print AnvBandit.ActualExplicitRegret.actual_time_order
+#print AnvBandit.ActualExplicitRegret.actual_Hxi_order
+#print axioms AnvBandit.DecayModel.mkAll_le_thetaM_mul
+#print axioms AnvBandit.DecayModel.Bschedule_le_Bcoef_mul
+#print axioms AnvBandit.DecayModel.lastShortPhase_Hxi_le_rcoef
+#print axioms AnvBandit.DecayModel.Pbeta_Hxi_le
+#print axioms AnvBandit.DecayModel.Clam_rhoConst_le
+#print axioms AnvBandit.DecayModel.Pbeta_general_horizon
+#print axioms AnvBandit.ActualExplicitRegret.actual_explicit
+#print axioms AnvBandit.ActualExplicitRegret.actual_time_order
+#print axioms AnvBandit.ActualExplicitRegret.actual_Hxi_order
+#print AnvBandit.ActualExplicitRegret.actual_explicit_canonical
+#print axioms AnvBandit.ActualExplicitRegret.actual_explicit_canonical
+#print AnvBandit.ActualExplicitRegret.actual_fixed_h_log_order
+#print axioms AnvBandit.ActualExplicitRegret.actual_fixed_h_log_order
+#print AnvBandit.ActualExplicitRegret.actual_sublinear
+#print axioms AnvBandit.ActualExplicitRegret.actual_sublinear

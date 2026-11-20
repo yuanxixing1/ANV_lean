@@ -1,0 +1,5 @@
+import AnvBandit.BaselineComparison
+#print AnvBandit.BaselineComparison.cooperativeBound
+#print AnvBandit.BaselineComparison.independentBound
+#print AnvBandit.BaselineComparison.corollary_4_2
+#print axioms AnvBandit.BaselineComparison.corollary_4_2

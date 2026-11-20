@@ -1,0 +1,9 @@
+import AnvBandit.ObservedRegret
+#check @AnvBandit.ObservedRegret.original_integral_eq
+#check @AnvBandit.ObservedRegret.original_weightedLoss_eq
+#print axioms AnvBandit.ObservedRegret.original_integral_eq
+#print axioms AnvBandit.ObservedRegret.original_weightedLoss_eq
+#print axioms AnvBandit.ObservedRegret.run_prefix_congr
+#print axioms AnvBandit.ObservedRegret.pathCost_observed
+#check @AnvBandit.ObservedRegret.original_weightedLoss_global
+#print axioms AnvBandit.ObservedRegret.original_weightedLoss_global

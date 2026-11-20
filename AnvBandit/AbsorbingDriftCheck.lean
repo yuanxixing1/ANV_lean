@@ -1,0 +1,8 @@
+import AnvBandit.AbsorbingDrift
+import AnvBandit.AbsorbingCharge
+#print axioms AnvBandit.Absorbing.conditional_absorbed_drift
+#print axioms AnvBandit.Absorbing.actual_error_budget_personal
+#print axioms AnvBandit.Absorbing.erroneous_phases_charge
+#check AnvBandit.Absorbing.conditional_absorbed_drift
+#check AnvBandit.Absorbing.actual_error_budget_personal
+#check AnvBandit.Absorbing.erroneous_phases_charge

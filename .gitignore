@@ -1,0 +1,19 @@
+# Project specific ignores
+/.lake/
+/.lake.bak/
+*.log
+*.tmp
+.DS_Store
+*.pyc
+__pycache__/
+*.o
+*.exe
+*.dll
+*.so
+*.dylib
+*.csv
+*.xlsx
+*.parquet
+*.h5
+*.hdf5
+/experiments/anv_results/
