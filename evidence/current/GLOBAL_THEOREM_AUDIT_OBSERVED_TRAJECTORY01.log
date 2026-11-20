@@ -1,0 +1,74 @@
+@AnvBandit.GlobalTheorem.team_regret_global_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  have c := M.rho p.T lam;
+  have cmax := M.supOthers c;
+  have Pbar :=
+    min (↑p.T)
+      (AnvBandit.Pbeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H) (↑(AnvBandit.ActualPropagation.preparation M p))
+        p.β);
+  AnvBandit.TrajectoryExpectation.teamRegret M p C lam ≤
+    min (↑n * ↑p.T)
+      (M.Gamma lam + min (↑n * cmax * ↑p.T) (↑n * cmax * Pbar + M.Clam c p.L 0 lam + p.δ * (↑n * cmax * ↑p.T)))
+'AnvBandit.GlobalTheorem.team_regret_global_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.TrajectoryExpectation.teamRegret_conversion' depends on axioms: [propext, Classical.choice, Quot.sound]
+def AnvBandit.TrajectoryExpectation.teamRegret : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → Fin 2 → ℝ :=
+fun {n K} M p C lam =>
+  AnvBandit.TrajectoryExpectation.oracle M p.T lam -
+    ∫ (ω : AnvBandit.ExecutionLaw.Path n),
+      AnvBandit.TrajectoryExpectation.pathReward M p lam ω ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam
+def AnvBandit.TrajectoryExpectation.oracle : {n K : ℕ} → AnvBandit.DecayModel n K → ℕ → Fin 2 → ℝ :=
+fun {n K} M T lam => if lam = 0 then AnvBandit.Vstar0 M else AnvBandit.Vstar1 M
+def AnvBandit.TrajectoryExpectation.pathReward : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → Fin 2 → AnvBandit.ExecutionLaw.Path n → ℝ :=
+fun {n K} M p lam ω =>
+  AnvBandit.TrajectoryExpectation.jointValue M lam (AnvBandit.TrajectoryExpectation.pathActions p ω)
+GLOBAL_AUDIT_EXIT_CODE=0
+import took 4.17s
+.olean serialization took 352ms
+cumulative profiling times:
+	.olean serialization 352ms
+	attribute application 0.0697ms
+	elaboration 127ms
+	fix level params 0.326ms
+	import 4.17s
+	initialization 25.8ms
+	instantiate metavars 0.143ms
+	interpretation 432ms
+	let-to-have transformation 0.273ms
+	linting 9.02ms
+	module linting 0.00152ms
+	overlappingInstancesLinter 6.54ms
+	parsing 4.52ms
+	process pre-definitions 2.15ms
+	share common exprs 1.55ms
+	tactic execution 19.4ms
+	tacticAnalysis 29.6ms
+	type checking 18.1ms
+	typeclass inference 397ms
+EXIT_CODE=0
+@AnvBandit.ObservedRegret.original_teamRegret_eq : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure ν],
+  MeasureTheory.Measure.map (Preorder.frestrictLe 0) ν =
+      MeasureTheory.Measure.map (Preorder.frestrictLe 0) (AnvBandit.ExecutionLaw.observedMeasure M p C lam) →
+    (∀ t < p.T,
+        ⇑(ProbabilityTheory.condDistrib (fun ω => (ω (t + 1)).1) (Preorder.frestrictLe t)
+              ν) =ᵐ[MeasureTheory.Measure.map (Preorder.frestrictLe t) ν]
+          ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ t < p.T,
+          AnvBandit.ExecutionLaw.retainedContact p (t + 1) →
+            ⇑(ProbabilityTheory.condDistrib (fun ω => (ω (t + 1)).2)
+                  (fun ω => (Preorder.frestrictLe t ω, (ω (t + 1)).1))
+                  ν) =ᵐ[MeasureTheory.Measure.map (fun ω => (Preorder.frestrictLe t ω, (ω (t + 1)).1)) ν]
+              ⇑(ProbabilityTheory.Kernel.const (AnvBandit.ExecutionLaw.Prefix n t × (Fin n → Bool))
+                  (AnvBandit.ExecutionLaw.contactDistribution C).toMeasure)) →
+        (∀ t < p.T,
+            ¬AnvBandit.ExecutionLaw.retainedContact p (t + 1) →
+              ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, (ω (t + 1)).2 = id) →
+          AnvBandit.ObservedRegret.originalTeamRegret M p lam ν = AnvBandit.TrajectoryExpectation.teamRegret M p C lam
+'AnvBandit.ObservedRegret.original_teamRegret_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ObservedRegret.original_pathReward_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ObservedRegret.pathActions_prefix_congr' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ObservedRegret.pathReward_observed' depends on axioms: [propext, Classical.choice, Quot.sound]
+AUDIT_EXIT_CODE=0

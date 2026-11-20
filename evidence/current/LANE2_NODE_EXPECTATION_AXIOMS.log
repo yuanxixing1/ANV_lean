@@ -1,0 +1,712 @@
+'AnvBandit.ActualNodeMoments.actual_arrived_ae' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ActualNodeMoments.integral_residualSum' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ActualNodeMoments.integral_arrivalSum' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ActualNodeExpectation.goodLoss_node_personal' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ActualNodeExpectation.goodLoss_node_public' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ActualNodeExpectation.goodLoss_node' depends on axioms: [propext, Classical.choice, Quot.sound]
+theorem AnvBandit.ActualNodeExpectation.goodLoss_node : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ),
+  (∀ (k : Fin K), 0 ≤ c k) →
+    c M.star = 0 →
+      AnvBandit.GlobalRegret.goodLoss M p C lam c ≤
+        M.supOthers c *
+            AnvBandit.Abeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H)
+              (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T +
+          M.Clam c p.L (AnvBandit.DP ⋯ ⋯ C (AnvBandit.Execution.holder p M.star)) lam :=
+fun {n K} M p C lam c hc hstar =>
+  if hl : lam = 0 then
+    Eq.symm hl ▸
+      have h := AnvBandit.ActualNodeExpectation.goodLoss_node_personal M p C 0 c hc hstar;
+      id
+        (le_of_not_gt fun a =>
+          Mathlib.Tactic.Linarith.lt_irrefl
+            (Eq.mp
+              (congrArg (fun _a => _a < 0)
+                (Mathlib.Tactic.Ring.of_eq
+                  (Mathlib.Tactic.Ring.Common.add_congr
+                    (Mathlib.Tactic.Ring.Common.sub_congr
+                      (Mathlib.Tactic.Ring.Common.atom_pf (AnvBandit.GlobalRegret.goodLoss M p C 0 c) rfl
+                        (Eq.mpr
+                          (id
+                            (congrArg
+                              (fun _a =>
+                                AnvBandit.GlobalRegret.goodLoss M p C 0 c ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                                  AnvBandit.GlobalRegret.goodLoss M p C 0 c ^ Nat.rawCast 1 * _a)
+                              (Eq.symm rfl)))
+                          (Eq.refl (AnvBandit.GlobalRegret.goodLoss M p C 0 c ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                      (Mathlib.Tactic.Ring.Common.add_congr
+                        (Mathlib.Tactic.Ring.Common.add_congr
+                          (Mathlib.Tactic.Ring.Common.mul_congr
+                            (Mathlib.Tactic.Ring.Common.atom_pf (M.supOthers c) rfl
+                              (Eq.mpr
+                                (id
+                                  (congrArg
+                                    (fun _a =>
+                                      M.supOthers c ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                                        M.supOthers c ^ Nat.rawCast 1 * _a)
+                                    (Eq.symm rfl)))
+                                (Eq.refl (M.supOthers c ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                            (Mathlib.Tactic.Ring.Common.atom_pf
+                              (AnvBandit.Abeta
+                                (have this := p.hn;
+                                Decidable.byContradiction fun a =>
+                                  AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T)
+                              rfl
+                              (Eq.mpr
+                                (id
+                                  (congrArg
+                                    (fun _a =>
+                                      AnvBandit.Abeta
+                                              (have this := p.hn;
+                                              Decidable.byContradiction fun a =>
+                                                AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                              C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                              (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                            Nat.rawCast 1 *
+                                          Nat.rawCast 1 =
+                                        AnvBandit.Abeta
+                                              (have this := p.hn;
+                                              Decidable.byContradiction fun a =>
+                                                AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                              C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                              (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                            Nat.rawCast 1 *
+                                          _a)
+                                    (Eq.symm rfl)))
+                                (Eq.refl
+                                  (AnvBandit.Abeta
+                                        (have this := p.hn;
+                                        Decidable.byContradiction fun a =>
+                                          AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                        C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                        (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                      Nat.rawCast 1 *
+                                    Nat.rawCast 1))))
+                            (Mathlib.Tactic.Ring.Common.add_mul
+                              (Mathlib.Tactic.Ring.Common.mul_add
+                                (Mathlib.Tactic.Ring.Common.mul_pf_left (M.supOthers c) (Nat.rawCast 1)
+                                  (Mathlib.Tactic.Ring.Common.mul_pf_right
+                                    (AnvBandit.Abeta
+                                      (have this := p.hn;
+                                      Decidable.byContradiction fun a =>
+                                        AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                      C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                      (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T)
+                                    (Nat.rawCast 1)
+                                    (Mathlib.Meta.NormNum.IsNat.to_raw_eq
+                                      (Mathlib.Meta.NormNum.isNat_mul (Eq.refl HMul.hMul)
+                                        (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1) (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1)
+                                        (Eq.refl 1)))))
+                                (Mathlib.Tactic.Ring.Common.mul_zero (M.supOthers c ^ Nat.rawCast 1 * Nat.rawCast 1))
+                                (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                                  (M.supOthers c ^ Nat.rawCast 1 *
+                                      (AnvBandit.Abeta
+                                            (have this := p.hn;
+                                            Decidable.byContradiction fun a =>
+                                              AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                            C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                            (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                          Nat.rawCast 1 *
+                                        Nat.rawCast 1) +
+                                    0)))
+                              (Mathlib.Tactic.Ring.Common.zero_mul
+                                (AnvBandit.Abeta
+                                        (have this := p.hn;
+                                        Decidable.byContradiction fun a =>
+                                          AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                        C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                        (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                      Nat.rawCast 1 *
+                                    Nat.rawCast 1 +
+                                  0))
+                              (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                                (M.supOthers c ^ Nat.rawCast 1 *
+                                    (AnvBandit.Abeta
+                                          (have this := p.hn;
+                                          Decidable.byContradiction fun a =>
+                                            AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                          C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                          (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                        Nat.rawCast 1 *
+                                      Nat.rawCast 1) +
+                                  0))))
+                          (Mathlib.Tactic.Ring.Common.atom_pf (M.Ccap c p.L) rfl
+                            (Eq.mpr
+                              (id
+                                (congrArg
+                                  (fun _a =>
+                                    M.Ccap c p.L ^ Nat.rawCast 1 * Nat.rawCast 1 = M.Ccap c p.L ^ Nat.rawCast 1 * _a)
+                                  (Eq.symm rfl)))
+                              (Eq.refl (M.Ccap c p.L ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                          (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                            (M.supOthers c ^ Nat.rawCast 1 *
+                              (AnvBandit.Abeta
+                                    (have this := p.hn;
+                                    Decidable.byContradiction fun a =>
+                                      AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                    C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                    (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                  Nat.rawCast 1 *
+                                Nat.rawCast 1))
+                            (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                              (M.Ccap c p.L ^ Nat.rawCast 1 * Nat.rawCast 1 + 0))))
+                        (Mathlib.Tactic.Ring.Common.mul_congr
+                          (Mathlib.Tactic.Ring.Common.atom_pf (M.wmax c p.L) rfl
+                            (Eq.mpr
+                              (id
+                                (congrArg
+                                  (fun _a =>
+                                    M.wmax c p.L ^ Nat.rawCast 1 * Nat.rawCast 1 = M.wmax c p.L ^ Nat.rawCast 1 * _a)
+                                  (Eq.symm rfl)))
+                              (Eq.refl (M.wmax c p.L ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                          (Mathlib.Tactic.Ring.Common.atom_pf
+                            (AnvBandit.DP
+                              (have this := p.hn;
+                              Decidable.byContradiction fun a =>
+                                AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                              p.hn C (AnvBandit.Execution.holder p M.star))
+                            rfl
+                            (Eq.mpr
+                              (id
+                                (congrArg
+                                  (fun _a =>
+                                    AnvBandit.DP
+                                            (have this := p.hn;
+                                            Decidable.byContradiction fun a =>
+                                              AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                            p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                          Nat.rawCast 1 *
+                                        Nat.rawCast 1 =
+                                      AnvBandit.DP
+                                            (have this := p.hn;
+                                            Decidable.byContradiction fun a =>
+                                              AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                            p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                          Nat.rawCast 1 *
+                                        _a)
+                                  (Eq.symm rfl)))
+                              (Eq.refl
+                                (AnvBandit.DP
+                                      (have this := p.hn;
+                                      Decidable.byContradiction fun a =>
+                                        AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                      p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                    Nat.rawCast 1 *
+                                  Nat.rawCast 1))))
+                          (Mathlib.Tactic.Ring.Common.add_mul
+                            (Mathlib.Tactic.Ring.Common.mul_add
+                              (Mathlib.Tactic.Ring.Common.mul_pf_left (M.wmax c p.L) (Nat.rawCast 1)
+                                (Mathlib.Tactic.Ring.Common.mul_pf_right
+                                  (AnvBandit.DP
+                                    (have this := p.hn;
+                                    Decidable.byContradiction fun a =>
+                                      AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                    p.hn C (AnvBandit.Execution.holder p M.star))
+                                  (Nat.rawCast 1)
+                                  (Mathlib.Meta.NormNum.IsNat.to_raw_eq
+                                    (Mathlib.Meta.NormNum.isNat_mul (Eq.refl HMul.hMul)
+                                      (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1) (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1)
+                                      (Eq.refl 1)))))
+                              (Mathlib.Tactic.Ring.Common.mul_zero (M.wmax c p.L ^ Nat.rawCast 1 * Nat.rawCast 1))
+                              (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                                (M.wmax c p.L ^ Nat.rawCast 1 *
+                                    (AnvBandit.DP
+                                          (have this := p.hn;
+                                          Decidable.byContradiction fun a =>
+                                            AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                          p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                        Nat.rawCast 1 *
+                                      Nat.rawCast 1) +
+                                  0)))
+                            (Mathlib.Tactic.Ring.Common.zero_mul
+                              (AnvBandit.DP
+                                      (have this := p.hn;
+                                      Decidable.byContradiction fun a =>
+                                        AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                      p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                    Nat.rawCast 1 *
+                                  Nat.rawCast 1 +
+                                0))
+                            (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                              (M.wmax c p.L ^ Nat.rawCast 1 *
+                                  (AnvBandit.DP
+                                        (have this := p.hn;
+                                        Decidable.byContradiction fun a =>
+                                          AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                        p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                      Nat.rawCast 1 *
+                                    Nat.rawCast 1) +
+                                0))))
+                        (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                          (M.supOthers c ^ Nat.rawCast 1 *
+                            (AnvBandit.Abeta
+                                  (have this := p.hn;
+                                  Decidable.byContradiction fun a =>
+                                    AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                  C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                  (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                Nat.rawCast 1 *
+                              Nat.rawCast 1))
+                          (Mathlib.Tactic.Ring.Common.add_pf_add_lt (M.Ccap c p.L ^ Nat.rawCast 1 * Nat.rawCast 1)
+                            (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                              (M.wmax c p.L ^ Nat.rawCast 1 *
+                                  (AnvBandit.DP
+                                        (have this := p.hn;
+                                        Decidable.byContradiction fun a =>
+                                          AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                        p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                      Nat.rawCast 1 *
+                                    Nat.rawCast 1) +
+                                0)))))
+                      (Mathlib.Tactic.Ring.Common.sub_pf
+                        (Mathlib.Tactic.Ring.Common.neg_add
+                          (Mathlib.Tactic.Ring.Common.neg_mul (M.supOthers c) (Nat.rawCast 1)
+                            (Mathlib.Tactic.Ring.Common.neg_mul
+                              (AnvBandit.Abeta
+                                (have this := p.hn;
+                                Decidable.byContradiction fun a =>
+                                  AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T)
+                              (Nat.rawCast 1)
+                              (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                                (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                                  (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                                  (Eq.refl (Int.negOfNat 1))))))
+                          (Mathlib.Tactic.Ring.Common.neg_add
+                            (Mathlib.Tactic.Ring.Common.neg_mul (M.Ccap c p.L) (Nat.rawCast 1)
+                              (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                                (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                                  (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                                  (Eq.refl (Int.negOfNat 1)))))
+                            (Mathlib.Tactic.Ring.Common.neg_add
+                              (Mathlib.Tactic.Ring.Common.neg_mul (M.wmax c p.L) (Nat.rawCast 1)
+                                (Mathlib.Tactic.Ring.Common.neg_mul
+                                  (AnvBandit.DP
+                                    (have this := p.hn;
+                                    Decidable.byContradiction fun a =>
+                                      AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                    p.hn C (AnvBandit.Execution.holder p M.star))
+                                  (Nat.rawCast 1)
+                                  (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                                    (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                                      (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                                      (Eq.refl (Int.negOfNat 1))))))
+                              Mathlib.Tactic.Ring.Common.neg_zero)))
+                        (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                          (AnvBandit.GlobalRegret.goodLoss M p C 0 c ^ Nat.rawCast 1 * Nat.rawCast 1)
+                          (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                            (M.supOthers c ^ Nat.rawCast 1 *
+                                (AnvBandit.Abeta
+                                      (have this := p.hn;
+                                      Decidable.byContradiction fun a =>
+                                        AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                      C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                      (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                    Nat.rawCast 1 *
+                                  (Int.negOfNat 1).rawCast) +
+                              (M.Ccap c p.L ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast +
+                                (M.wmax c p.L ^ Nat.rawCast 1 *
+                                    (AnvBandit.DP
+                                          (have this := p.hn;
+                                          Decidable.byContradiction fun a =>
+                                            AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                          p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                        Nat.rawCast 1 *
+                                      (Int.negOfNat 1).rawCast) +
+                                  0)))))))
+                    (Mathlib.Tactic.Ring.Common.sub_congr
+                      (Mathlib.Tactic.Ring.Common.add_congr
+                        (Mathlib.Tactic.Ring.Common.mul_congr
+                          (Mathlib.Tactic.Ring.Common.atom_pf (M.supOthers c) rfl
+                            (Eq.mpr
+                              (id
+                                (congrArg
+                                  (fun _a =>
+                                    M.supOthers c ^ Nat.rawCast 1 * Nat.rawCast 1 = M.supOthers c ^ Nat.rawCast 1 * _a)
+                                  (Eq.symm rfl)))
+                              (Eq.refl (M.supOthers c ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                          (Mathlib.Tactic.Ring.Common.atom_pf
+                            (AnvBandit.Abeta
+                              (have this := p.hn;
+                              Decidable.byContradiction fun a =>
+                                AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                              C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                              (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T)
+                            rfl
+                            (Eq.mpr
+                              (id
+                                (congrArg
+                                  (fun _a =>
+                                    AnvBandit.Abeta
+                                            (have this := p.hn;
+                                            Decidable.byContradiction fun a =>
+                                              AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                            C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                            (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                          Nat.rawCast 1 *
+                                        Nat.rawCast 1 =
+                                      AnvBandit.Abeta
+                                            (have this := p.hn;
+                                            Decidable.byContradiction fun a =>
+                                              AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                            C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                            (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                          Nat.rawCast 1 *
+                                        _a)
+                                  (Eq.symm rfl)))
+                              (Eq.refl
+                                (AnvBandit.Abeta
+                                      (have this := p.hn;
+                                      Decidable.byContradiction fun a =>
+                                        AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                      C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                      (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                    Nat.rawCast 1 *
+                                  Nat.rawCast 1))))
+                          (Mathlib.Tactic.Ring.Common.add_mul
+                            (Mathlib.Tactic.Ring.Common.mul_add
+                              (Mathlib.Tactic.Ring.Common.mul_pf_left (M.supOthers c) (Nat.rawCast 1)
+                                (Mathlib.Tactic.Ring.Common.mul_pf_right
+                                  (AnvBandit.Abeta
+                                    (have this := p.hn;
+                                    Decidable.byContradiction fun a =>
+                                      AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                    C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                    (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T)
+                                  (Nat.rawCast 1)
+                                  (Mathlib.Meta.NormNum.IsNat.to_raw_eq
+                                    (Mathlib.Meta.NormNum.isNat_mul (Eq.refl HMul.hMul)
+                                      (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1) (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1)
+                                      (Eq.refl 1)))))
+                              (Mathlib.Tactic.Ring.Common.mul_zero (M.supOthers c ^ Nat.rawCast 1 * Nat.rawCast 1))
+                              (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                                (M.supOthers c ^ Nat.rawCast 1 *
+                                    (AnvBandit.Abeta
+                                          (have this := p.hn;
+                                          Decidable.byContradiction fun a =>
+                                            AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                          C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                          (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                        Nat.rawCast 1 *
+                                      Nat.rawCast 1) +
+                                  0)))
+                            (Mathlib.Tactic.Ring.Common.zero_mul
+                              (AnvBandit.Abeta
+                                      (have this := p.hn;
+                                      Decidable.byContradiction fun a =>
+                                        AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                      C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                      (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                    Nat.rawCast 1 *
+                                  Nat.rawCast 1 +
+                                0))
+                            (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                              (M.supOthers c ^ Nat.rawCast 1 *
+                                  (AnvBandit.Abeta
+                                        (have this := p.hn;
+                                        Decidable.byContradiction fun a =>
+                                          AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                        C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                        (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                      Nat.rawCast 1 *
+                                    Nat.rawCast 1) +
+                                0))))
+                        (Mathlib.Tactic.Ring.Common.add_congr
+                          (Mathlib.Tactic.Ring.Common.atom_pf (M.Ccap c p.L) rfl
+                            (Eq.mpr
+                              (id
+                                (congrArg
+                                  (fun _a =>
+                                    M.Ccap c p.L ^ Nat.rawCast 1 * Nat.rawCast 1 = M.Ccap c p.L ^ Nat.rawCast 1 * _a)
+                                  (Eq.symm rfl)))
+                              (Eq.refl (M.Ccap c p.L ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                          (Mathlib.Tactic.Ring.Common.mul_congr
+                            (Mathlib.Tactic.Ring.Common.atom_pf
+                              (AnvBandit.DP
+                                (have this := p.hn;
+                                Decidable.byContradiction fun a =>
+                                  AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                p.hn C (AnvBandit.Execution.holder p M.star))
+                              rfl
+                              (Eq.mpr
+                                (id
+                                  (congrArg
+                                    (fun _a =>
+                                      AnvBandit.DP
+                                              (have this := p.hn;
+                                              Decidable.byContradiction fun a =>
+                                                AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                              p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                            Nat.rawCast 1 *
+                                          Nat.rawCast 1 =
+                                        AnvBandit.DP
+                                              (have this := p.hn;
+                                              Decidable.byContradiction fun a =>
+                                                AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                              p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                            Nat.rawCast 1 *
+                                          _a)
+                                    (Eq.symm rfl)))
+                                (Eq.refl
+                                  (AnvBandit.DP
+                                        (have this := p.hn;
+                                        Decidable.byContradiction fun a =>
+                                          AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                        p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                      Nat.rawCast 1 *
+                                    Nat.rawCast 1))))
+                            (Mathlib.Tactic.Ring.Common.atom_pf (M.wmax c p.L) rfl
+                              (Eq.mpr
+                                (id
+                                  (congrArg
+                                    (fun _a =>
+                                      M.wmax c p.L ^ Nat.rawCast 1 * Nat.rawCast 1 = M.wmax c p.L ^ Nat.rawCast 1 * _a)
+                                    (Eq.symm rfl)))
+                                (Eq.refl (M.wmax c p.L ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                            (Mathlib.Tactic.Ring.Common.add_mul
+                              (Mathlib.Tactic.Ring.Common.mul_add
+                                (Mathlib.Tactic.Ring.Common.mul_pf_right (M.wmax c p.L) (Nat.rawCast 1)
+                                  (Mathlib.Tactic.Ring.Common.mul_pf_left
+                                    (AnvBandit.DP
+                                      (have this := p.hn;
+                                      Decidable.byContradiction fun a =>
+                                        AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                      p.hn C (AnvBandit.Execution.holder p M.star))
+                                    (Nat.rawCast 1)
+                                    (Mathlib.Meta.NormNum.IsNat.to_raw_eq
+                                      (Mathlib.Meta.NormNum.isNat_mul (Eq.refl HMul.hMul)
+                                        (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1) (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1)
+                                        (Eq.refl 1)))))
+                                (Mathlib.Tactic.Ring.Common.mul_zero
+                                  (AnvBandit.DP
+                                        (have this := p.hn;
+                                        Decidable.byContradiction fun a =>
+                                          AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                        p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                      Nat.rawCast 1 *
+                                    Nat.rawCast 1))
+                                (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                                  (M.wmax c p.L ^ Nat.rawCast 1 *
+                                      (AnvBandit.DP
+                                            (have this := p.hn;
+                                            Decidable.byContradiction fun a =>
+                                              AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                            p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                          Nat.rawCast 1 *
+                                        Nat.rawCast 1) +
+                                    0)))
+                              (Mathlib.Tactic.Ring.Common.zero_mul (M.wmax c p.L ^ Nat.rawCast 1 * Nat.rawCast 1 + 0))
+                              (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                                (M.wmax c p.L ^ Nat.rawCast 1 *
+                                    (AnvBandit.DP
+                                          (have this := p.hn;
+                                          Decidable.byContradiction fun a =>
+                                            AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                          p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                        Nat.rawCast 1 *
+                                      Nat.rawCast 1) +
+                                  0))))
+                          (Mathlib.Tactic.Ring.Common.add_pf_add_lt (M.Ccap c p.L ^ Nat.rawCast 1 * Nat.rawCast 1)
+                            (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                              (M.wmax c p.L ^ Nat.rawCast 1 *
+                                  (AnvBandit.DP
+                                        (have this := p.hn;
+                                        Decidable.byContradiction fun a =>
+                                          AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                        p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                      Nat.rawCast 1 *
+                                    Nat.rawCast 1) +
+                                0))))
+                        (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                          (M.supOthers c ^ Nat.rawCast 1 *
+                            (AnvBandit.Abeta
+                                  (have this := p.hn;
+                                  Decidable.byContradiction fun a =>
+                                    AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                  C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                  (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                Nat.rawCast 1 *
+                              Nat.rawCast 1))
+                          (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                            (M.Ccap c p.L ^ Nat.rawCast 1 * Nat.rawCast 1 +
+                              (M.wmax c p.L ^ Nat.rawCast 1 *
+                                  (AnvBandit.DP
+                                        (have this := p.hn;
+                                        Decidable.byContradiction fun a =>
+                                          AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                        p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                      Nat.rawCast 1 *
+                                    Nat.rawCast 1) +
+                                0)))))
+                      (Mathlib.Tactic.Ring.Common.atom_pf (AnvBandit.GlobalRegret.goodLoss M p C 0 c) rfl
+                        (Eq.mpr
+                          (id
+                            (congrArg
+                              (fun _a =>
+                                AnvBandit.GlobalRegret.goodLoss M p C 0 c ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                                  AnvBandit.GlobalRegret.goodLoss M p C 0 c ^ Nat.rawCast 1 * _a)
+                              (Eq.symm rfl)))
+                          (Eq.refl (AnvBandit.GlobalRegret.goodLoss M p C 0 c ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                      (Mathlib.Tactic.Ring.Common.sub_pf
+                        (Mathlib.Tactic.Ring.Common.neg_add
+                          (Mathlib.Tactic.Ring.Common.neg_mul (AnvBandit.GlobalRegret.goodLoss M p C 0 c)
+                            (Nat.rawCast 1)
+                            (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                              (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                                (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                                (Eq.refl (Int.negOfNat 1)))))
+                          Mathlib.Tactic.Ring.Common.neg_zero)
+                        (Mathlib.Tactic.Ring.Common.add_pf_add_gt
+                          (AnvBandit.GlobalRegret.goodLoss M p C 0 c ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast)
+                          (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                            (M.supOthers c ^ Nat.rawCast 1 *
+                                (AnvBandit.Abeta
+                                      (have this := p.hn;
+                                      Decidable.byContradiction fun a =>
+                                        AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                      C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                                      (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T ^
+                                    Nat.rawCast 1 *
+                                  Nat.rawCast 1) +
+                              (M.Ccap c p.L ^ Nat.rawCast 1 * Nat.rawCast 1 +
+                                (M.wmax c p.L ^ Nat.rawCast 1 *
+                                    (AnvBandit.DP
+                                          (have this := p.hn;
+                                          Decidable.byContradiction fun a =>
+                                            AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                          p.hn C (AnvBandit.Execution.holder p M.star) ^
+                                        Nat.rawCast 1 *
+                                      Nat.rawCast 1) +
+                                  0)))))))
+                    (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                      (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (AnvBandit.GlobalRegret.goodLoss M p C 0 c)
+                        (Nat.rawCast 1)
+                        (Mathlib.Meta.NormNum.IsInt.to_isNat
+                          (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                            (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                            (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1)) (Eq.refl (Int.ofNat 0)))))
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                        (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (M.supOthers c) (Nat.rawCast 1)
+                          (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero
+                            (AnvBandit.Abeta
+                              (have this := p.hn;
+                              Decidable.byContradiction fun a =>
+                                AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                              C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                              (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T)
+                            (Nat.rawCast 1)
+                            (Mathlib.Meta.NormNum.IsInt.to_isNat
+                              (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                                (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1))
+                                (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                                (Eq.refl (Int.ofNat 0))))))
+                        (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                          (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (M.Ccap c p.L) (Nat.rawCast 1)
+                            (Mathlib.Meta.NormNum.IsInt.to_isNat
+                              (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                                (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1))
+                                (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                                (Eq.refl (Int.ofNat 0)))))
+                          (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                            (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (M.wmax c p.L) (Nat.rawCast 1)
+                              (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero
+                                (AnvBandit.DP
+                                  (have this := p.hn;
+                                  Decidable.byContradiction fun a =>
+                                    AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                                  p.hn C (AnvBandit.Execution.holder p M.star))
+                                (Nat.rawCast 1)
+                                (Mathlib.Meta.NormNum.IsInt.to_isNat
+                                  (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                                    (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1))
+                                    (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                                    (Eq.refl (Int.ofNat 0))))))
+                            (Mathlib.Tactic.Ring.Common.add_pf_zero_add 0))))))
+                  (Mathlib.Tactic.Ring.cast_zero (Mathlib.Meta.NormNum.isNat_ofNat ℝ Nat.cast_zero))))
+              (Mathlib.Tactic.Linarith.add_lt_of_le_of_neg (Mathlib.Tactic.Linarith.sub_nonpos_of_le h)
+                (Mathlib.Tactic.Linarith.sub_neg_of_lt a))))
+  else
+    have h1 :=
+      Fin.ext
+        (have hn := fun h => hl (Fin.ext h);
+        have hb := lam.isLt;
+        id (Decidable.byContradiction fun a => AnvBandit.ActualNodeExpectation.goodLoss_node._proof_1_1 lam hn hb a));
+    Eq.ndrec (motive := fun lam =>
+      ¬lam = 0 →
+        AnvBandit.GlobalRegret.goodLoss M p C lam c ≤
+          M.supOthers c *
+              AnvBandit.Abeta
+                (have this := p.hn;
+                Decidable.byContradiction fun a =>
+                  AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                C (AnvBandit.Execution.holder p M.star) (↑p.H) (↑(AnvBandit.ActualPropagation.preparation M p)) p.β
+                ↑p.T +
+            M.Clam c p.L
+              (AnvBandit.DP
+                (have this := p.hn;
+                Decidable.byContradiction fun a =>
+                  AnvBandit.ActualNodeExpectation.integrate_node_bound._proof_1✝ this a)
+                p.hn C (AnvBandit.Execution.holder p M.star))
+              lam)
+      (fun hl => AnvBandit.ActualNodeExpectation.goodLoss_node_public_min M p C c hc hstar) (Eq.symm h1) hl
+structure AnvBandit.Execution.Params (n K : ℕ) : Type
+number of parameters: 2
+fields:
+  AnvBandit.Execution.Params.hn : 2 ≤ n
+  AnvBandit.Execution.Params.hK : 2 ≤ K
+  AnvBandit.Execution.Params.T : ℕ
+  AnvBandit.Execution.Params.hT : 1 ≤ self.T
+  AnvBandit.Execution.Params.h : ℕ
+  AnvBandit.Execution.Params.hh : 1 ≤ self.h
+  AnvBandit.Execution.Params.H : ℕ
+  AnvBandit.Execution.Params.hH : 1 ≤ self.H
+  AnvBandit.Execution.Params.hdiv : self.h ∣ self.H
+  AnvBandit.Execution.Params.δ : ℝ
+  AnvBandit.Execution.Params.hδ : 0 < self.δ ∧ self.δ < 1
+  AnvBandit.Execution.Params.β : ℝ
+  AnvBandit.Execution.Params.hβ : 1 < self.β
+constructor:
+  AnvBandit.Execution.Params.mk {n K : ℕ} (hn : 2 ≤ n) (hK : 2 ≤ K) (T : ℕ) (hT : 1 ≤ T) (h : ℕ) (hh : 1 ≤ h) (H : ℕ)
+    (hH : 1 ≤ H) (hdiv : h ∣ H) (δ : ℝ) (hδ : 0 < δ ∧ δ < 1) (β : ℝ) (hβ : 1 < β) : AnvBandit.Execution.Params n K
+structure AnvBandit.DecayModel (n K : ℕ) : Type
+number of parameters: 2
+fields:
+  AnvBandit.DecayModel.b : Fin K → ℝ
+  AnvBandit.DecayModel.f : Fin K → ℕ → ℝ
+  AnvBandit.DecayModel.star : Fin K
+  AnvBandit.DecayModel.b_pos : ∀ (k : Fin K), 0 < self.b k
+  AnvBandit.DecayModel.b_le_one : ∀ (k : Fin K), self.b k ≤ 1
+  AnvBandit.DecayModel.f_nonneg : ∀ (k : Fin K) (s : ℕ), 0 ≤ self.f k s
+  AnvBandit.DecayModel.f_anti : ∀ (k : Fin K), Antitone (self.f k)
+  AnvBandit.DecayModel.f_tendsto : ∀ (k : Fin K), Filter.Tendsto (self.f k) Filter.atTop (nhds 0)
+  AnvBandit.DecayModel.f_le_gap : ∀ (k : Fin K) (s : ℕ), self.f k s ≤ 1 - self.b k
+  AnvBandit.DecayModel.b_le_star : ∀ (k : Fin K), self.b k ≤ self.b self.star
+  AnvBandit.DecayModel.star_unique : ∀ (k : Fin K), self.b k = self.b self.star → k = self.star
+  AnvBandit.DecayModel.two_le_n : 2 ≤ n
+  AnvBandit.DecayModel.two_le_K : 2 ≤ K
+constructor:
+  AnvBandit.DecayModel.mk {n K : ℕ} (b : Fin K → ℝ) (f : Fin K → ℕ → ℝ) (star : Fin K) (b_pos : ∀ (k : Fin K), 0 < b k)
+    (b_le_one : ∀ (k : Fin K), b k ≤ 1) (f_nonneg : ∀ (k : Fin K) (s : ℕ), 0 ≤ f k s)
+    (f_anti : ∀ (k : Fin K), Antitone (f k)) (f_tendsto : ∀ (k : Fin K), Filter.Tendsto (f k) Filter.atTop (nhds 0))
+    (f_le_gap : ∀ (k : Fin K) (s : ℕ), f k s ≤ 1 - b k) (b_le_star : ∀ (k : Fin K), b k ≤ b star)
+    (star_unique : ∀ (k : Fin K), b k = b star → k = star) (two_le_n : 2 ≤ n) (two_le_K : 2 ≤ K) :
+    AnvBandit.DecayModel n K
+structure AnvBandit.ContactMatrix (n : ℕ) : Type
+number of parameters: 1
+fields:
+  AnvBandit.ContactMatrix.P : Fin n → Fin n → ℝ
+  AnvBandit.ContactMatrix.nonneg : ∀ (i j : Fin n), 0 ≤ self.P i j
+  AnvBandit.ContactMatrix.row_sum : ∀ (i : Fin n), ∑ j, self.P i j = 1
+  AnvBandit.ContactMatrix.pmin : ℝ
+  AnvBandit.ContactMatrix.pmin_pos : 0 < self.pmin
+  AnvBandit.ContactMatrix.le_pmin : ∀ (i j : Fin n), 0 < self.P i j → self.pmin ≤ self.P i j
+  AnvBandit.ContactMatrix.irreducible : ∀ (a b : Fin n), Relation.ReflTransGen (fun x y => 0 < self.P y x) a b
+constructor:
+  AnvBandit.ContactMatrix.mk {n : ℕ} (P : Fin n → Fin n → ℝ) (nonneg : ∀ (i j : Fin n), 0 ≤ P i j)
+    (row_sum : ∀ (i : Fin n), ∑ j, P i j = 1) (pmin : ℝ) (pmin_pos : 0 < pmin)
+    (le_pmin : ∀ (i j : Fin n), 0 < P i j → pmin ≤ P i j)
+    (irreducible : ∀ (a b : Fin n), Relation.ReflTransGen (fun x y => 0 < P y x) a b) : AnvBandit.ContactMatrix n
+EXIT_CODE=0

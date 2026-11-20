@@ -1,0 +1,24 @@
+CLEAN VERIFICATION SUMMARY
+Status: PASS
+Library modules: 128 (127 AnvBandit/**/*.lean plus AnvBandit.lean)
+Check modules among those targets: 20
+Additional generated audit sources: verification/AllAxioms.lean and Signatures.lean;
+  both were executed separately with lake env lean and exited 0.
+Distinct fresh project module builds in CLEAN_BUILD_LOG.txt: 128
+External dependency targets built in that log: 0
+Clean-build exit: 0, UTC end 2026-10-27T16:00:44.031477+00:00
+Final Check / axiom audit / signatures exit: 0 / 0 / 0
+Project declarations audited: 3002
+Project theorem declarations audited: 2313
+Strictly classified compiler runtime companions: 17
+Nonpartial project type/body/proof unsafe-or-partial direct references: 0
+Transitive axiom union: propext, Classical.choice, Quot.sound
+Source/configuration files fingerprinted: 131, unchanged and matching release tree
+Pinned dependencies: 9, all expected revisions and clean tracked trees
+Toolchain: Lean 4.32.2 / Lake 5.0.0-src+f3b06c7
+Mathlib: 905b95818eb32af7874a58b427f50c1711a5e96c
+Final success UTC: 2026-10-27T16:12:01.178395+00:00
+Recovery provenance: explicit audit-only recovery after the same successful clean build;
+  see VERIFIER_RECOVERY_NOTES.txt and preserved failed/interrupted attempts in history/.
+Warnings: ordinary linter warnings retained; no final compiler errors.
+Platform executed: Linux only. Windows scripts/instructions are not claimed as tested.

@@ -1,0 +1,10 @@
+def AnvBandit.PublicDP.W : {n K : ℕ} → AnvBandit.DecayModel n K → ℕ → (Fin K → ℕ) → ℝ :=
+fun {n K} M x x_1 => Nat.brecOn (motive := fun x => (Fin K → ℕ) → ℝ) x (AnvBandit.PublicDP.W._f M) x_1
+@AnvBandit.PublicDP.W_eq_Vstar1 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (T : ℕ),
+  AnvBandit.PublicDP.W M T 0 = AnvBandit.Vstar1 M
+@AnvBandit.PublicDP.W_batch : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (r : ℕ) (m : Fin K → ℕ),
+  AnvBandit.PublicDP.W M (r + 1) m =
+    (AnvBandit.comps K n).sup' ⋯ fun x =>
+      ∑ k, ↑↑(x k) * M.mean k (1 + m k) + AnvBandit.PublicDP.W M r (m + fun k => ↑(x k))
+'AnvBandit.PublicDP.W_eq_Vstar1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.PublicDP.W_batch' depends on axioms: [propext, Classical.choice, Quot.sound]

@@ -1,0 +1,115 @@
+Tue Oct 27 13:51:38 UTC 2026
+COMMAND: lake env lean AnvBandit/ExecutionObservedCheck.lean
+@AnvBandit.ExecutionLaw.retainedContact_iff_communicates : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K)
+  (ω : AnvBandit.ExecutionLaw.Path n),
+  ∀ t < p.T,
+    AnvBandit.ExecutionLaw.retainedContact p (t + 1) ↔
+      AnvBandit.Execution.communicates p t
+        (AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+          (AnvBandit.ExecutionLaw.pathContacts p ω) t)
+@AnvBandit.ExecutionLaw.observedPath_run : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K)
+  (ω : AnvBandit.ExecutionLaw.Path n) (t : ℕ),
+  AnvBandit.Execution.run p
+      (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards (AnvBandit.ExecutionLaw.observedPath p ω)))
+      (AnvBandit.ExecutionLaw.pathContacts p (AnvBandit.ExecutionLaw.observedPath p ω)) t =
+    AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+      (AnvBandit.ExecutionLaw.pathContacts p ω) t
+@AnvBandit.ExecutionLaw.observed_transition_of_original : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure ν] (t : ℕ),
+  ⇑(ProbabilityTheory.condDistrib (fun ω => (ω (t + 1)).1) (Preorder.frestrictLe t)
+          ν) =ᵐ[MeasureTheory.Measure.map (Preorder.frestrictLe t) ν]
+      ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t) →
+    (AnvBandit.ExecutionLaw.retainedContact p (t + 1) →
+        ⇑(ProbabilityTheory.condDistrib (fun ω => (ω (t + 1)).2) (fun ω => (Preorder.frestrictLe t ω, (ω (t + 1)).1))
+              ν) =ᵐ[MeasureTheory.Measure.map (fun ω => (Preorder.frestrictLe t ω, (ω (t + 1)).1)) ν]
+          ⇑(ProbabilityTheory.Kernel.const (AnvBandit.ExecutionLaw.Prefix n t × (Fin n → Bool))
+              (AnvBandit.ExecutionLaw.contactDistribution C).toMeasure)) →
+      (¬AnvBandit.ExecutionLaw.retainedContact p (t + 1) →
+          ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, (ω (t + 1)).2 = id) →
+        ⇑(ProbabilityTheory.condDistrib (fun ω => ω (t + 1)) (Preorder.frestrictLe t)
+              ν) =ᵐ[MeasureTheory.Measure.map (Preorder.frestrictLe t) ν]
+          ⇑(AnvBandit.ExecutionLaw.observedKernel M p C lam t)
+@AnvBandit.ExecutionLaw.finite_original_observed_law : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure ν],
+  MeasureTheory.Measure.map (Preorder.frestrictLe 0) ν =
+      MeasureTheory.Measure.map (Preorder.frestrictLe 0) (AnvBandit.ExecutionLaw.observedMeasure M p C lam) →
+    (∀ t < p.T,
+        ⇑(ProbabilityTheory.condDistrib (fun ω => (ω (t + 1)).1) (Preorder.frestrictLe t)
+              ν) =ᵐ[MeasureTheory.Measure.map (Preorder.frestrictLe t) ν]
+          ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ t < p.T,
+          AnvBandit.ExecutionLaw.retainedContact p (t + 1) →
+            ⇑(ProbabilityTheory.condDistrib (fun ω => (ω (t + 1)).2)
+                  (fun ω => (Preorder.frestrictLe t ω, (ω (t + 1)).1))
+                  ν) =ᵐ[MeasureTheory.Measure.map (fun ω => (Preorder.frestrictLe t ω, (ω (t + 1)).1)) ν]
+              ⇑(ProbabilityTheory.Kernel.const (AnvBandit.ExecutionLaw.Prefix n t × (Fin n → Bool))
+                  (AnvBandit.ExecutionLaw.contactDistribution C).toMeasure)) →
+        (∀ t < p.T,
+            ¬AnvBandit.ExecutionLaw.retainedContact p (t + 1) →
+              ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, (ω (t + 1)).2 = id) →
+          ∀ t ≤ p.T,
+            MeasureTheory.Measure.map (Preorder.frestrictLe t) ν =
+              MeasureTheory.Measure.map (Preorder.frestrictLe t) (AnvBandit.ExecutionLaw.observedMeasure M p C lam)
+@AnvBandit.ExecutionLaw.finite_original_execution_state_law : ∀ {n K : ℕ}
+  [inst : MeasurableSpace (AnvBandit.Execution.State n K)] (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure (AnvBandit.ExecutionLaw.Path n)) [inst_1 : MeasureTheory.IsProbabilityMeasure ν],
+  MeasureTheory.Measure.map (Preorder.frestrictLe 0) ν =
+      MeasureTheory.Measure.map (Preorder.frestrictLe 0) (AnvBandit.ExecutionLaw.observedMeasure M p C lam) →
+    (∀ t < p.T,
+        ⇑(ProbabilityTheory.condDistrib (fun ω => (ω (t + 1)).1) (Preorder.frestrictLe t)
+              ν) =ᵐ[MeasureTheory.Measure.map (Preorder.frestrictLe t) ν]
+          ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ t < p.T,
+          AnvBandit.ExecutionLaw.retainedContact p (t + 1) →
+            ⇑(ProbabilityTheory.condDistrib (fun ω => (ω (t + 1)).2)
+                  (fun ω => (Preorder.frestrictLe t ω, (ω (t + 1)).1))
+                  ν) =ᵐ[MeasureTheory.Measure.map (fun ω => (Preorder.frestrictLe t ω, (ω (t + 1)).1)) ν]
+              ⇑(ProbabilityTheory.Kernel.const (AnvBandit.ExecutionLaw.Prefix n t × (Fin n → Bool))
+                  (AnvBandit.ExecutionLaw.contactDistribution C).toMeasure)) →
+        (∀ t < p.T,
+            ¬AnvBandit.ExecutionLaw.retainedContact p (t + 1) →
+              ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, (ω (t + 1)).2 = id) →
+          ∀ t ≤ p.T,
+            MeasureTheory.Measure.map
+                (fun ω =>
+                  AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+                    (AnvBandit.ExecutionLaw.pathContacts p ω) t)
+                ν =
+              MeasureTheory.Measure.map
+                (fun ω =>
+                  AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+                    (AnvBandit.ExecutionLaw.pathContacts p ω) t)
+                (AnvBandit.ExecutionLaw.executionMeasure M p C lam)
+@AnvBandit.ExecutionLaw.finite_observed_statistic_transfer : ∀ {n K : ℕ} {A : Type u_1} [inst : MeasurableSpace A]
+  (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure (AnvBandit.ExecutionLaw.Path n)) [inst_1 : MeasureTheory.IsProbabilityMeasure ν],
+  MeasureTheory.Measure.map (Preorder.frestrictLe 0) ν =
+      MeasureTheory.Measure.map (Preorder.frestrictLe 0) (AnvBandit.ExecutionLaw.observedMeasure M p C lam) →
+    (∀ t < p.T,
+        ⇑(ProbabilityTheory.condDistrib (fun ω => ω (t + 1)) (Preorder.frestrictLe t)
+              ν) =ᵐ[MeasureTheory.Measure.map (Preorder.frestrictLe t) ν]
+          ⇑(AnvBandit.ExecutionLaw.observedKernel M p C lam t)) →
+      ∀ t ≤ p.T,
+        ∀ (f : AnvBandit.ExecutionLaw.Prefix n t → A),
+          (∀ (h : AnvBandit.ExecutionLaw.Prefix n t), f (AnvBandit.ExecutionLaw.observedPrefix p t h) = f h) →
+            MeasureTheory.Measure.map (fun ω => f (Preorder.frestrictLe t ω)) ν =
+              MeasureTheory.Measure.map (fun ω => f (Preorder.frestrictLe t ω))
+                (AnvBandit.ExecutionLaw.executionMeasure M p C lam)
+'AnvBandit.ExecutionLaw.retainedContact_iff_communicates' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExecutionLaw.observedPath_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExecutionLaw.observed_transition_of_original' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExecutionLaw.finite_original_observed_law' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExecutionLaw.finite_original_execution_state_law' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExecutionLaw.finite_observed_statistic_transfer' depends on axioms: [propext, Classical.choice, Quot.sound]
+@AnvBandit.ExecutionLaw.observed_conditional_law : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (t : ℕ),
+  ⇑(ProbabilityTheory.condDistrib (fun ω => ω (t + 1)) (Preorder.frestrictLe t)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C
+          lam)) =ᵐ[MeasureTheory.Measure.map (Preorder.frestrictLe t)
+      (AnvBandit.ExecutionLaw.observedMeasure M p C lam)]
+    ⇑(AnvBandit.ExecutionLaw.observedKernel M p C lam t)
+'AnvBandit.ExecutionLaw.observed_conditional_law' depends on axioms: [propext, Classical.choice, Quot.sound]
+EXIT_CODE=0

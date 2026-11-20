@@ -1,0 +1,53 @@
+Tue Oct 27 12:57:58 UTC 2026
+'AnvBandit.DecayModel.hkappa_exact_le_coarse' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.DecayModel.sum_mk_le_hkappa' depends on axioms: [propext, Classical.choice, Quot.sound]
+def AnvBandit.DecayModel.HKappa : {n K : ℕ} → AnvBandit.DecayModel n K → ℝ → ℕ :=
+fun {n K} M L => (Finset.powersetCard (AnvBandit.kappa n K) M.others).sup' ⋯ fun F => ∑ k ∈ F, M.mkAll L k
+def AnvBandit.DecayModel.ofPositiveCurves : {n K : ℕ} →
+  (b : Fin K → ℝ) →
+    (f : Fin K → ℕ → ℝ) →
+      (star : Fin K) →
+        (∀ (k : Fin K), 0 < b k) →
+          (∀ (k : Fin K), b k ≤ 1) →
+            (∀ (k : Fin K) (s : ℕ), 1 ≤ s → 0 ≤ f k s) →
+              (∀ (k : Fin K) (s t : ℕ), 1 ≤ s → s ≤ t → f k t ≤ f k s) →
+                (∀ (k : Fin K), Filter.Tendsto (f k) Filter.atTop (nhds 0)) →
+                  (∀ (k : Fin K) (s : ℕ), 1 ≤ s → f k s ≤ 1 - b k) →
+                    (∀ (k : Fin K), b k ≤ b star) →
+                      (∀ (k : Fin K), b k = b star → k = star) → 2 ≤ n → 2 ≤ K → AnvBandit.DecayModel n K :=
+fun {n K} b f star b_pos b_le_one f_nonneg f_anti f_tendsto f_le_gap b_le_star star_unique two_le_n two_le_K =>
+  { b := b, f := fun k => AnvBandit.extendPositiveCurve (f k), star := star, b_pos := b_pos, b_le_one := b_le_one,
+    f_nonneg := ⋯, f_anti := ⋯, f_tendsto := ⋯, f_le_gap := ⋯, b_le_star := b_le_star, star_unique := star_unique,
+    two_le_n := two_le_n, two_le_K := two_le_K }
+'AnvBandit.extendPositiveCurve_antitone' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.extendPositiveCurve_tendsto' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Ldelta_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.legal_Hxi' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.nonneg_subset_budget_iff_exact' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.rH_eq_last_short_phase' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.reliable_phase_exact_budget' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.DecayModel.Bschedule_le_coarse' depends on axioms: [propext, Classical.choice, Quot.sound]
+def AnvBandit.ContactMatrix.ofStochasticIrreducible : {n : ℕ} →
+  0 < n →
+    (P : Fin n → Fin n → ℝ) →
+      (∀ (i j : Fin n), 0 ≤ P i j) →
+        (∀ (i : Fin n), ∑ j, P i j = 1) →
+          (∀ (a b : Fin n), Relation.ReflTransGen (fun x y => 0 < P y x) a b) → AnvBandit.ContactMatrix n :=
+fun {n} hn P hP hrow hirr =>
+  { P := P, nonneg := hP, row_sum := hrow,
+    pmin := (AnvBandit.ContactMatrix.positiveEntries P).inf' ⋯ fun ij => P ij.1 ij.2, pmin_pos := ⋯, le_pmin := ⋯,
+    irreducible := hirr }
+'AnvBandit.ContactMatrix.ofStochasticIrreducible' depends on axioms: [propext, Classical.choice, Quot.sound]
+theorem AnvBandit.ContactMatrix.ofStochasticIrreducible_pmin_attained : ∀ {n : ℕ} (hn : 0 < n) (P : Fin n → Fin n → ℝ)
+  (hP : ∀ (i j : Fin n), 0 ≤ P i j) (hrow : ∀ (i : Fin n), ∑ j, P i j = 1)
+  (hirr : ∀ (a b : Fin n), Relation.ReflTransGen (fun x y => 0 < P y x) a b),
+  ∃ i j, 0 < P i j ∧ (AnvBandit.ContactMatrix.ofStochasticIrreducible hn P hP hrow hirr).pmin = P i j :=
+fun {n} hn P hP hrow hirr =>
+  Exists.casesOn
+    (Finset.exists_mem_eq_inf' (AnvBandit.ContactMatrix.positiveEntries_nonempty hn P hrow) fun ij => P ij.1 ij.2)
+    fun ij h =>
+    And.casesOn h fun hij heq => Exists.intro ij.1 (Exists.intro ij.2 ⟨(Finset.mem_filter.mp hij).right, heq⟩)
+'AnvBandit.ContactMatrix.ofStochasticIrreducible_pmin_attained' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+EXIT_CODE=0

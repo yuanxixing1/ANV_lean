@@ -1,0 +1,37 @@
+def AnvBandit.ExecutionUCB.extendedIndex : {K : ℕ} → (Fin K → ℕ) → (Fin K → ℝ) → Fin K → WithTop ℝ :=
+fun {K} N u k => if N k = 0 then ⊤ else ↑(u k)
+theorem AnvBandit.ExecutionUCB.priorityChoice_spec : ∀ {K : ℕ} (S : Finset (Fin K)) (hS : S.Nonempty) (N : Fin K → ℕ)
+  (u : Fin K → ℝ),
+  have a := AnvBandit.ExecutionUCB.priorityChoice S hS N u;
+  a ∈ S ∧
+    (∀ k ∈ S, AnvBandit.ExecutionUCB.extendedIndex N u k ≤ AnvBandit.ExecutionUCB.extendedIndex N u a) ∧
+      ∀ k ∈ S, AnvBandit.ExecutionUCB.extendedIndex N u k = AnvBandit.ExecutionUCB.extendedIndex N u a → a ≤ k :=
+⋯
+theorem AnvBandit.ExecutionUCB.priorityChoice_eq_min_argmax : ∀ {K : ℕ} (S : Finset (Fin K)) (hS : S.Nonempty)
+  (N : Fin K → ℕ) (u : Fin K → ℝ),
+  AnvBandit.ExecutionUCB.priorityChoice S hS N u =
+    {k ∈ S | AnvBandit.ExecutionUCB.extendedIndex N u k = S.sup' hS (AnvBandit.ExecutionUCB.extendedIndex N u)}.min'
+      ⋯ :=
+⋯
+theorem AnvBandit.ExecutionUCB.cooperative_choose_eq_min_argmax : ∀ {K n : ℕ} (p : AnvBandit.Execution.Params n K)
+  {i : Fin n} (s : AnvBandit.Execution.LocalState n K i),
+  AnvBandit.Execution.LocalState.choose p s =
+    {k ∈ s.active |
+          AnvBandit.ExecutionUCB.extendedIndex s.N (AnvBandit.Execution.LocalState.index p s) k =
+            s.active.sup' ⋯ (AnvBandit.ExecutionUCB.extendedIndex s.N (AnvBandit.Execution.LocalState.index p s))}.min'
+      ⋯ :=
+⋯
+theorem AnvBandit.ExecutionUCB.baseline_choose_eq_min_argmax : ∀ {K n : ℕ} (p : AnvBandit.Execution.Params n K)
+  {i : Fin n} (s : AnvBandit.BaselineExecution.LocalState n K i),
+  AnvBandit.BaselineExecution.LocalState.choose p s =
+    {k ∈ s.active |
+          AnvBandit.ExecutionUCB.extendedIndex s.N (AnvBandit.BaselineExecution.LocalState.index p s) k =
+            s.active.sup' ⋯
+              (AnvBandit.ExecutionUCB.extendedIndex s.N (AnvBandit.BaselineExecution.LocalState.index p s))}.min'
+      ⋯ :=
+⋯
+'AnvBandit.ExecutionUCB.priorityChoice_spec' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExecutionUCB.priorityChoice_eq_min_argmax' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExecutionUCB.cooperative_choose_eq_min_argmax' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExecutionUCB.baseline_choose_eq_min_argmax' depends on axioms: [propext, Classical.choice, Quot.sound]
+EXIT_CODE=0

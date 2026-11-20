@@ -1,0 +1,7 @@
+UTC 2026-10-27T16:15:11.252793+00:00
+VERIFIER_SHA256 c26cd0c7687018fdfd74d364b0961b5db932545028c930aa2e855c2b2cf87a1d
+Invalid argument rejects, exit=1; stale PASS removed: PASS
+Resume with mismatched source fingerprint rejects, exit=1; stale PASS removed: PASS
+Forbidden-token scanner nested comments/strings and partial/helper-name tests: PASS
+Python 3.8 syntax parse for both Python scripts: PASS (runtime used here: Python 3.12.14)
+Guard tests used only synthetic temporary fixtures, not actual Lean sources or Lean processes.

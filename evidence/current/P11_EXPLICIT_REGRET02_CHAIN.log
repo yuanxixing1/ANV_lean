@@ -1,0 +1,125 @@
+Tue Oct 27 14:20:15 UTC 2026
+f4084924c21e2353e2c6801cbe113805c894e0bb903c9f524d2347699086053a  AnvBandit/ActualExplicitRegret.lean
+COMMAND: lake env lean --profile -o .lake/build/lib/lean/AnvBandit/ActualExplicitRegret.olean AnvBandit/ActualExplicitRegret.lean
+import took 4.32s
+.olean serialization took 405ms
+interpretation of Mathlib.Tactic._aux_Mathlib_Tactic_Linarith_Frontend___elabRules_Mathlib_Tactic_nlinarith_1._boxed took 274ms
+interpretation of Mathlib.Tactic._aux_Mathlib_Tactic_Linarith_Frontend___elabRules_Mathlib_Tactic_nlinarith_1._boxed took 1.28s
+interpretation of Mathlib.Tactic._aux_Mathlib_Tactic_Linarith_Frontend___elabRules_Mathlib_Tactic_nlinarith_1._boxed took 897ms
+cumulative profiling times:
+	.olean serialization 405ms
+	attribute application 0.121ms
+	congr simp thm 13ms
+	dsimp 4.58ms
+	elaboration 159ms
+	fix level params 2.87ms
+	import 4.32s
+	initialization 36.9ms
+	instantiate metavars 12.5ms
+	interpretation 3.64s
+	let-to-have transformation 0.191ms
+	linting 29ms
+	module linting 0.00176ms
+	norm_num 270ms
+	overlappingInstancesLinter 7.25ms
+	parsing 26.1ms
+	process pre-definitions 25.8ms
+	ring 173ms
+	share common exprs 55.3ms
+	simp 179ms
+	tactic execution 344ms
+	tacticAnalysis 72.5ms
+	type checking 303ms
+	typeclass inference 1.79s
+EXIT_CODE=0 TARGET=ActualExplicitRegret
+f4084924c21e2353e2c6801cbe113805c894e0bb903c9f524d2347699086053a  AnvBandit/ActualExplicitRegret.lean
+efa7a6011149d622abc23fc092910b446e8f809f63d2096ad3018077e0d4cf99  AnvBandit/ActualAsymptotics.lean
+COMMAND: lake env lean --profile -o .lake/build/lib/lean/AnvBandit/ActualAsymptotics.olean AnvBandit/ActualAsymptotics.lean
+import took 4.19s
+.olean serialization took 316ms
+interpretation of Mathlib.Tactic._aux_Mathlib_Tactic_Linarith_Frontend___elabRules_Mathlib_Tactic_nlinarith_1._boxed took 162ms
+interpretation of Mathlib.Tactic._aux_Mathlib_Tactic_Linarith_Frontend___elabRules_Mathlib_Tactic_nlinarith_1._boxed took 231ms
+interpretation of Mathlib.Tactic._aux_Mathlib_Tactic_Linarith_Frontend___elabRules_Mathlib_Tactic_nlinarith_1._boxed took 196ms
+cumulative profiling times:
+	.olean serialization 316ms
+	attribute application 0.0339ms
+	congr simp thm 5.04ms
+	dsimp 2.53ms
+	elaboration 26.7ms
+	fix level params 0.417ms
+	import 4.19s
+	initialization 40.5ms
+	instantiate metavars 1.53ms
+	interpretation 1.11s
+	let-to-have transformation 0.0505ms
+	linting 6.29ms
+	module linting 0.00139ms
+	norm_num 33.9ms
+	overlappingInstancesLinter 3.76ms
+	parsing 6.07ms
+	process pre-definitions 5.73ms
+	ring 36.9ms
+	share common exprs 7.03ms
+	simp 40.4ms
+	tactic execution 107ms
+	tacticAnalysis 25ms
+	type checking 50ms
+	typeclass inference 840ms
+EXIT_CODE=0 TARGET=ActualAsymptotics
+efa7a6011149d622abc23fc092910b446e8f809f63d2096ad3018077e0d4cf99  AnvBandit/ActualAsymptotics.lean
+46cbeaddc5154570005fc9397614fb7bc3914864350860c5ff6bf25262e7222f  AnvBandit/ActualExplicitCanonical.lean
+COMMAND: lake env lean --profile -o .lake/build/lib/lean/AnvBandit/ActualExplicitCanonical.olean AnvBandit/ActualExplicitCanonical.lean
+import took 5.18s
+.olean serialization took 495ms
+cumulative profiling times:
+	.olean serialization 495ms
+	attribute application 0.0156ms
+	elaboration 14.6ms
+	fix level params 0.0305ms
+	import 5.18s
+	initialization 34.8ms
+	instantiate metavars 0.0375ms
+	interpretation 594ms
+	let-to-have transformation 0.729ms
+	linting 4.05ms
+	module linting 0.00145ms
+	overlappingInstancesLinter 5.04ms
+	parsing 2.02ms
+	process pre-definitions 0.346ms
+	share common exprs 0.166ms
+	tactic execution 6.41ms
+	tacticAnalysis 21.6ms
+	type checking 7.94ms
+	typeclass inference 15.2ms
+EXIT_CODE=0 TARGET=ActualExplicitCanonical
+46cbeaddc5154570005fc9397614fb7bc3914864350860c5ff6bf25262e7222f  AnvBandit/ActualExplicitCanonical.lean
+8d7ab40ff3f3c6ce970b3af62f65435ed2c3084fb74a75773c1958ba7490f3da  AnvBandit/ActualSublinear.lean
+COMMAND: lake env lean --profile -o .lake/build/lib/lean/AnvBandit/ActualSublinear.olean AnvBandit/ActualSublinear.lean
+import took 5.09s
+.olean serialization took 341ms
+cumulative profiling times:
+	.olean serialization 341ms
+	attribute application 0.0313ms
+	congr simp thm 2.73ms
+	elaboration 29.5ms
+	fix level params 0.2ms
+	import 5.09s
+	initialization 29.3ms
+	instantiate metavars 1.68ms
+	interpretation 665ms
+	let-to-have transformation 0.0538ms
+	linting 7.31ms
+	module linting 0.00106ms
+	norm_num 3.82ms
+	overlappingInstancesLinter 11.8ms
+	parsing 7.3ms
+	process pre-definitions 3.19ms
+	ring 17.1ms
+	share common exprs 3.85ms
+	simp 33.1ms
+	tactic execution 88ms
+	tacticAnalysis 31.8ms
+	type checking 27.2ms
+	typeclass inference 274ms
+EXIT_CODE=0 TARGET=ActualSublinear
+8d7ab40ff3f3c6ce970b3af62f65435ed2c3084fb74a75773c1958ba7490f3da  AnvBandit/ActualSublinear.lean

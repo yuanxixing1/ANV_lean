@@ -1,0 +1,2 @@
+PASS: no forbidden tokens outside comments/strings
+Supplemental scan only; see CLEAN_AXIOMS.txt for kernel declaration and transitive axiom audit.

@@ -1,0 +1,60 @@
+✔ [8659/8661] Built AnvBandit.Prob (7.3s)
+✔ [8660/8661] Built AnvBandit.Adaptive (5.7s)
+⚠ [8661/8661] Built AnvBandit.GoodEvent (9.9s)
+warning: AnvBandit/GoodEvent.lean:111:49: This simp argument is unused:
+  min_eq_left hle'
+
+Hint: Omit it from the simp argument list.
+  simp [capped, hs, hn, min_eq_left hle, m̵i̵n̵_̵e̵q̵_̵l̵e̵f̵t̵ ̵h̵l̵e̵'̵,̵ ̵sum_range_succ]
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+warning: AnvBandit/GoodEvent.lean:162:21: this tactic is never executed
+
+Note: This linter can be disabled with `set_option linter.unreachableTactic false`
+warning: AnvBandit/GoodEvent.lean:162:21: 'ring' tactic does nothing
+
+Note: This linter can be disabled with `set_option linter.unusedTactic false`
+warning: AnvBandit/GoodEvent.lean:227:19: This simp argument is unused:
+  Bool.true_eq
+
+Hint: Omit it from the simp argument list.
+  simp only [hd, B̵o̵o̵l̵.̵t̵r̵u̵e̵_̵e̵q̵,̵ ̵if_true, Nat.cast_add, Nat.cast_one]
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+warning: AnvBandit/GoodEvent.lean:415:15: This simp argument is unused:
+  Subtype.coe_mk
+
+Hint: Omit it from the simp argument list.
+  simp only [̵S̵u̵b̵t̵y̵p̵e̵.̵c̵o̵e̵_̵m̵k̵]̵ ̵at h
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+info: AnvBandit/GoodEvent.lean:610:44: Try this:
+  [apply] ring_nf
+  
+  The `ring` tactic failed to close the goal. Use `ring_nf` to obtain a normal form.
+    
+  Note that `ring` works primarily in *commutative* rings. If you have a noncommutative ring, abelian group or module, consider using `noncomm_ring`, `abel` or `module` instead.
+warning: AnvBandit/GoodEvent.lean:588:25: This simp argument is unused:
+  Bool.true_eq
+
+Hint: Omit it from the simp argument list.
+  simp only [hd, B̵o̵o̵l̵.̵t̵r̵u̵e̵_̵e̵q̵,̵ ̵Set.mem_setOf_eq, Set.indicator_of_mem, if_true, sub_self, zero_add]
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+warning: AnvBandit/GoodEvent.lean:610:40: Used `tac1 <;> tac2` where `(tac1; tac2)` would suffice
+
+Note: This linter can be disabled with `set_option linter.unnecessarySeqFocus false`
+warning: AnvBandit/GoodEvent.lean:762:4: `push_neg` has been deprecated. Prefer using `push Not` instead.
+If you'd rather continue using `push_neg` in your project, you can implement it as follows:
+```
+open Lean.Parser.Tactic in
+macro "push_neg" cfg:optConfig loc:(location)? : tactic =>
+  `(tactic| push $cfg:optConfig Not $[$loc]?)
+```
+warning: AnvBandit/GoodEvent.lean:773:10: this tactic is never executed
+
+Note: This linter can be disabled with `set_option linter.unreachableTactic false`
+warning: AnvBandit/GoodEvent.lean:773:10: 'ring' tactic does nothing
+
+Note: This linter can be disabled with `set_option linter.unusedTactic false`
+Build completed successfully (8661 jobs).

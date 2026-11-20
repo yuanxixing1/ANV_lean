@@ -1,0 +1,3125 @@
+UTC_START 2026-10-27T16:11:54.912832+00:00
+CWD /workspace/scratch/ff8a080f48f6/anv_clean_verify
+COMMAND lake env lean verification/Signatures.lean
+structure AnvBandit.DecayModel (n K : ℕ) : Type
+number of parameters: 2
+fields:
+  AnvBandit.DecayModel.b : Fin K → ℝ
+  AnvBandit.DecayModel.f : Fin K → ℕ → ℝ
+  AnvBandit.DecayModel.star : Fin K
+  AnvBandit.DecayModel.b_pos : ∀ (k : Fin K), LT.lt.{0} 0 (self.b k)
+  AnvBandit.DecayModel.b_le_one : ∀ (k : Fin K), LE.le.{0} (self.b k) 1
+  AnvBandit.DecayModel.f_nonneg : ∀ (k : Fin K) (s : ℕ), LE.le.{0} 0 (self.f k s)
+  AnvBandit.DecayModel.f_anti : ∀ (k : Fin K), Antitone.{0, 0} (self.f k)
+  AnvBandit.DecayModel.f_tendsto : ∀ (k : Fin K), Filter.Tendsto.{0, 0} (self.f k) Filter.atTop.{0} (nhds.{0} 0)
+  AnvBandit.DecayModel.f_le_gap : ∀ (k : Fin K) (s : ℕ), LE.le.{0} (self.f k s) (HSub.hSub.{0, 0, 0} 1 (self.b k))
+  AnvBandit.DecayModel.b_le_star : ∀ (k : Fin K), LE.le.{0} (self.b k) (self.b self.star)
+  AnvBandit.DecayModel.star_unique : ∀ (k : Fin K), Eq.{1} (self.b k) (self.b self.star) → Eq.{1} k self.star
+  AnvBandit.DecayModel.two_le_n : LE.le.{0} 2 n
+  AnvBandit.DecayModel.two_le_K : LE.le.{0} 2 K
+constructor:
+  AnvBandit.DecayModel.mk {n K : ℕ} (b : Fin K → ℝ) (f : Fin K → ℕ → ℝ) (star : Fin K)
+    (b_pos : ∀ (k : Fin K), LT.lt.{0} 0 (b k)) (b_le_one : ∀ (k : Fin K), LE.le.{0} (b k) 1)
+    (f_nonneg : ∀ (k : Fin K) (s : ℕ), LE.le.{0} 0 (f k s)) (f_anti : ∀ (k : Fin K), Antitone.{0, 0} (f k))
+    (f_tendsto : ∀ (k : Fin K), Filter.Tendsto.{0, 0} (f k) Filter.atTop.{0} (nhds.{0} 0))
+    (f_le_gap : ∀ (k : Fin K) (s : ℕ), LE.le.{0} (f k s) (HSub.hSub.{0, 0, 0} 1 (b k)))
+    (b_le_star : ∀ (k : Fin K), LE.le.{0} (b k) (b star))
+    (star_unique : ∀ (k : Fin K), Eq.{1} (b k) (b star) → Eq.{1} k star) (two_le_n : LE.le.{0} 2 n)
+    (two_le_K : LE.le.{0} 2 K) : AnvBandit.DecayModel n K
+structure AnvBandit.ContactMatrix (n : ℕ) : Type
+number of parameters: 1
+fields:
+  AnvBandit.ContactMatrix.P : Fin n → Fin n → ℝ
+  AnvBandit.ContactMatrix.nonneg : ∀ (i j : Fin n), LE.le.{0} 0 (self.P i j)
+  AnvBandit.ContactMatrix.row_sum : ∀ (i : Fin n), Eq.{1} (∑ j, self.P i j) 1
+  AnvBandit.ContactMatrix.pmin : ℝ
+  AnvBandit.ContactMatrix.pmin_pos : LT.lt.{0} 0 self.pmin
+  AnvBandit.ContactMatrix.le_pmin : ∀ (i j : Fin n), LT.lt.{0} 0 (self.P i j) → LE.le.{0} self.pmin (self.P i j)
+  AnvBandit.ContactMatrix.irreducible : ∀ (a b : Fin n),
+      Relation.ReflTransGen.{0} (fun x y => LT.lt.{0} 0 (self.P y x)) a b
+constructor:
+  AnvBandit.ContactMatrix.mk {n : ℕ} (P : Fin n → Fin n → ℝ) (nonneg : ∀ (i j : Fin n), LE.le.{0} 0 (P i j))
+    (row_sum : ∀ (i : Fin n), Eq.{1} (∑ j, P i j) 1) (pmin : ℝ) (pmin_pos : LT.lt.{0} 0 pmin)
+    (le_pmin : ∀ (i j : Fin n), LT.lt.{0} 0 (P i j) → LE.le.{0} pmin (P i j))
+    (irreducible : ∀ (a b : Fin n), Relation.ReflTransGen.{0} (fun x y => LT.lt.{0} 0 (P y x)) a b) :
+    AnvBandit.ContactMatrix n
+def AnvBandit.ContactMatrix.ofStochasticIrreducible : {n : ℕ} →
+  LT.lt.{0} 0 n →
+    (P : Fin n → Fin n → ℝ) →
+      (∀ (i j : Fin n), LE.le.{0} 0 (P i j)) →
+        (∀ (i : Fin n), Eq.{1} (∑ j, P i j) 1) →
+          (∀ (a b : Fin n), Relation.ReflTransGen.{0} (fun x y => LT.lt.{0} 0 (P y x)) a b) →
+            AnvBandit.ContactMatrix n :=
+fun {n} hn P hP hrow hirr =>
+  { P := P, nonneg := hP, row_sum := hrow,
+    pmin := Finset.inf'.{0, 0} (AnvBandit.ContactMatrix.positiveEntries P) ⋯ fun ij => P ij.1 ij.2, pmin_pos := ⋯,
+    le_pmin := ⋯, irreducible := hirr }
+structure AnvBandit.Execution.Params (n K : ℕ) : Type
+number of parameters: 2
+fields:
+  AnvBandit.Execution.Params.hn : LE.le.{0} 2 n
+  AnvBandit.Execution.Params.hK : LE.le.{0} 2 K
+  AnvBandit.Execution.Params.T : ℕ
+  AnvBandit.Execution.Params.hT : LE.le.{0} 1 self.T
+  AnvBandit.Execution.Params.h : ℕ
+  AnvBandit.Execution.Params.hh : LE.le.{0} 1 self.h
+  AnvBandit.Execution.Params.H : ℕ
+  AnvBandit.Execution.Params.hH : LE.le.{0} 1 self.H
+  AnvBandit.Execution.Params.hdiv : Dvd.dvd.{0} self.h self.H
+  AnvBandit.Execution.Params.δ : ℝ
+  AnvBandit.Execution.Params.hδ : LT.lt.{0} 0 self.δ ∧ LT.lt.{0} self.δ 1
+  AnvBandit.Execution.Params.β : ℝ
+  AnvBandit.Execution.Params.hβ : LT.lt.{0} 1 self.β
+constructor:
+  AnvBandit.Execution.Params.mk {n K : ℕ} (hn : LE.le.{0} 2 n) (hK : LE.le.{0} 2 K) (T : ℕ) (hT : LE.le.{0} 1 T) (h : ℕ)
+    (hh : LE.le.{0} 1 h) (H : ℕ) (hH : LE.le.{0} 1 H) (hdiv : Dvd.dvd.{0} h H) (δ : ℝ)
+    (hδ : LT.lt.{0} 0 δ ∧ LT.lt.{0} δ 1) (β : ℝ) (hβ : LT.lt.{0} 1 β) : AnvBandit.Execution.Params n K
+structure AnvBandit.Execution.LocalState (n K : ℕ) (i : Fin n) : Type
+number of parameters: 3
+fields:
+  AnvBandit.Execution.LocalState.D : Finset.{0} (Fin K)
+  AnvBandit.Execution.LocalState.nonempty : Finset.Nonempty.{0} self.D
+  AnvBandit.Execution.LocalState.card_le : LE.le.{0} (Finset.card.{0} self.D) 2
+  AnvBandit.Execution.LocalState.disjoint : Disjoint.{0} (AnvBandit.Execution.sticky n i) self.D
+  AnvBandit.Execution.LocalState.N : Fin K → ℕ
+  AnvBandit.Execution.LocalState.Y : Fin K → ℝ
+  AnvBandit.Execution.LocalState.C : Fin K → ℕ
+constructor:
+  AnvBandit.Execution.LocalState.mk {n K : ℕ} {i : Fin n} (D : Finset.{0} (Fin K)) (nonempty : Finset.Nonempty.{0} D)
+    (card_le : LE.le.{0} (Finset.card.{0} D) 2) (disjoint : Disjoint.{0} (AnvBandit.Execution.sticky n i) D)
+    (N : Fin K → ℕ) (Y : Fin K → ℝ) (C : Fin K → ℕ) : AnvBandit.Execution.LocalState n K i
+structure AnvBandit.Execution.State (n K : ℕ) : Type
+number of parameters: 2
+fields:
+  AnvBandit.Execution.State.nodes : (i : Fin n) → AnvBandit.Execution.LocalState n K i
+  AnvBandit.Execution.State.phase : ℕ
+constructor:
+  AnvBandit.Execution.State.mk {n K : ℕ} (nodes : (i : Fin n) → AnvBandit.Execution.LocalState n K i) (phase : ℕ) :
+    AnvBandit.Execution.State n K
+def AnvBandit.Execution.LocalState.choose : {n K : ℕ} →
+  {i : Fin n} → AnvBandit.Execution.Params n K → AnvBandit.Execution.LocalState n K i → Fin K :=
+fun {n K} {i} p s =>
+  if h : Finset.Nonempty.{0} s.unseen then Finset.min'.{0} s.unseen h
+  else AnvBandit.topArg (AnvBandit.Execution.LocalState.index p s) s.active ⋯
+def AnvBandit.Execution.run : {n K : ℕ} →
+  AnvBandit.Execution.Params n K → (ℕ → Fin n → ℝ) → (ℕ → Fin n → Fin n) → ℕ → AnvBandit.Execution.State n K :=
+fun {n K} p X J x => Nat.brecOn.{1} x (AnvBandit.Execution.run._f p X J)
+def AnvBandit.ExecutionUCB.extendedIndex : {K : ℕ} → (Fin K → ℕ) → (Fin K → ℝ) → Fin K → WithTop.{0} ℝ :=
+fun {K} N u k => ite.{1} (Eq.{1} (N k) 0) Top.top.{0} ↑(u k)
+theorem AnvBandit.ExecutionUCB.priorityChoice_spec : ∀ {K : ℕ} (S : Finset.{0} (Fin K)) (hS : Finset.Nonempty.{0} S)
+  (N : Fin K → ℕ) (u : Fin K → ℝ),
+  have a := AnvBandit.ExecutionUCB.priorityChoice S hS N u;
+  Membership.mem.{0, 0} S a ∧
+    (∀ (k : Fin K),
+        Membership.mem.{0, 0} S k →
+          LE.le.{0} (AnvBandit.ExecutionUCB.extendedIndex N u k) (AnvBandit.ExecutionUCB.extendedIndex N u a)) ∧
+      ∀ (k : Fin K),
+        Membership.mem.{0, 0} S k →
+          Eq.{1} (AnvBandit.ExecutionUCB.extendedIndex N u k) (AnvBandit.ExecutionUCB.extendedIndex N u a) →
+            LE.le.{0} a k :=
+⋯
+theorem AnvBandit.ExecutionUCB.priorityChoice_eq_min_argmax : ∀ {K : ℕ} (S : Finset.{0} (Fin K))
+  (hS : Finset.Nonempty.{0} S) (N : Fin K → ℕ) (u : Fin K → ℝ),
+  Eq.{1} (AnvBandit.ExecutionUCB.priorityChoice S hS N u)
+    (Finset.min'.{0}
+      ({k ∈ S |
+        Eq.{1} (AnvBandit.ExecutionUCB.extendedIndex N u k)
+          (Finset.sup'.{0, 0} S hS (AnvBandit.ExecutionUCB.extendedIndex N u))})
+      ⋯) :=
+⋯
+theorem AnvBandit.ExecutionUCB.cooperative_choose_eq_min_argmax : ∀ {K n : ℕ} (p : AnvBandit.Execution.Params n K)
+  {i : Fin n} (s : AnvBandit.Execution.LocalState n K i),
+  Eq.{1} (AnvBandit.Execution.LocalState.choose p s)
+    (Finset.min'.{0}
+      ({k ∈ s.active |
+        Eq.{1} (AnvBandit.ExecutionUCB.extendedIndex s.N (AnvBandit.Execution.LocalState.index p s) k)
+          (Finset.sup'.{0, 0} s.active ⋯
+            (AnvBandit.ExecutionUCB.extendedIndex s.N (AnvBandit.Execution.LocalState.index p s)))})
+      ⋯) :=
+⋯
+theorem AnvBandit.ExecutionUCB.baseline_choose_eq_min_argmax : ∀ {K n : ℕ} (p : AnvBandit.Execution.Params n K)
+  {i : Fin n} (s : AnvBandit.BaselineExecution.LocalState n K i),
+  Eq.{1} (AnvBandit.BaselineExecution.LocalState.choose p s)
+    (Finset.min'.{0}
+      ({k ∈ s.active |
+        Eq.{1} (AnvBandit.ExecutionUCB.extendedIndex s.N (AnvBandit.BaselineExecution.LocalState.index p s) k)
+          (Finset.sup'.{0, 0} s.active ⋯
+            (AnvBandit.ExecutionUCB.extendedIndex s.N (AnvBandit.BaselineExecution.LocalState.index p s)))})
+      ⋯) :=
+⋯
+def AnvBandit.ExecutionLaw.rewardDistribution : {n K : ℕ} →
+  AnvBandit.DecayModel n K →
+    AnvBandit.Execution.Params n K → Fin 2 → AnvBandit.Execution.State n K → PMF.{0} (Fin n → Bool) :=
+fun {n K} M p lam s =>
+  AnvBandit.ExecutionLaw.finiteProduct.{0, 0} fun i =>
+    PMF.bernoulli (Subtype.mk.{1} (AnvBandit.ExecutionLaw.stateMean M p lam s i) ⋯) ⋯
+def AnvBandit.ExecutionLaw.contactDistribution : {n : ℕ} → AnvBandit.ContactMatrix n → PMF.{0} (Fin n → Fin n) :=
+fun {n} C => AnvBandit.ExecutionLaw.finiteProduct.{0, 0} (AnvBandit.ExecutionLaw.contactRow C)
+def AnvBandit.ExecutionLaw.observedMeasure : {n K : ℕ} →
+  AnvBandit.DecayModel n K →
+    AnvBandit.Execution.Params n K →
+      AnvBandit.ContactMatrix n → Fin 2 → MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n) :=
+fun {n K} M p C lam =>
+  MeasureTheory.Measure.map.{0, 0} (AnvBandit.ExecutionLaw.observedPath p)
+    (AnvBandit.ExecutionLaw.executionMeasure M p C lam)
+def AnvBandit.TrajectoryExpectation.teamRegret : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → Fin 2 → ℝ :=
+fun {n K} M p C lam =>
+  HSub.hSub.{0, 0, 0} (AnvBandit.TrajectoryExpectation.oracle M p.T lam)
+    (∫ (ω : AnvBandit.ExecutionLaw.Path n),
+      AnvBandit.TrajectoryExpectation.pathReward M p lam ω ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam)
+def AnvBandit.GlobalRegret.weightedLoss : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → Fin 2 → (Fin K → ℝ) → ℝ :=
+fun {n K} M p C lam c =>
+  ∫ (ω : AnvBandit.ExecutionLaw.Path n),
+    AnvBandit.GlobalRegret.pathCost p c ω ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam
+def AnvBandit.Main.actualCaps : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → AnvBandit.Props :=
+fun {n K} M p C =>
+  {
+    Pβ :=
+      min.{0} (↑p.T)
+        (AnvBandit.Pbeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H)
+          (↑(AnvBandit.ActualPropagation.preparation M p)) p.β),
+    Aβ :=
+      AnvBandit.Abeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H) (↑(AnvBandit.ActualPropagation.preparation M p))
+        p.β ↑p.T,
+    M1 := AnvBandit.M1 ⋯ C (AnvBandit.Execution.holder p M.star),
+    DP := AnvBandit.DP ⋯ ⋯ C (AnvBandit.Execution.holder p M.star),
+    Kβ :=
+      AnvBandit.concreteKbeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H) p.β
+        (AnvBandit.ActualPropagation.preparation M p) }
+def AnvBandit.Main.actualEcost : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → Fin 2 → (Fin K → ℝ) → ℝ :=
+fun {n K} M p C lam c =>
+  AnvBandit.Ecost (AnvBandit.Eglob n (M.supOthers c) (AnvBandit.Main.actualCaps M p C).Pβ (M.Clam c p.L 0 lam))
+    (AnvBandit.Enode (M.supOthers c) (AnvBandit.Main.actualCaps M p C).Aβ
+      (M.Clam c p.L (AnvBandit.Main.actualCaps M p C).DP lam))
+    (AnvBandit.Epot (M.Flam c p.L lam) (M.supOthers c) (AnvBandit.Main.actualCaps M p C).M1
+      (M.Flam (AnvBandit.Absorbing.unitCost M) p.L lam) (AnvBandit.Main.actualCaps M p C).Kβ)
+def AnvBandit.Main.canonicalContact : {n K : ℕ} →
+  AnvBandit.Execution.Params n K →
+    (P : Fin n → Fin n → ℝ) →
+      (∀ (i j : Fin n), LE.le.{0} 0 (P i j)) →
+        (∀ (i : Fin n), Eq.{1} (∑ j, P i j) 1) →
+          (∀ (a b : Fin n), Relation.ReflTransGen.{0} (fun x y => LT.lt.{0} 0 (P x y)) a b) →
+            AnvBandit.ContactMatrix n :=
+fun {n K} p P hP hrow hirr => AnvBandit.ContactMatrix.ofStochasticIrreducible ⋯ P hP hrow ⋯
+theorem AnvBandit.Main.theorem_C_4 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K)
+  (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      LE.le.{0} (AnvBandit.GlobalRegret.weightedLoss M p C lam c)
+        (min.{0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers c)) ↑p.T)
+          (HAdd.hAdd.{0, 0, 0} (AnvBandit.Main.actualEcost M p C lam c)
+            (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers c)) ↑p.T)))) :=
+⋯
+theorem AnvBandit.Main.theorem_4_1 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K)
+  (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  LE.le.{0} (AnvBandit.TrajectoryExpectation.teamRegret M p C lam)
+    (AnvBandit.Uco (HMul.hMul.{0, 0, 0} ↑n ↑p.T) (M.Gamma lam)
+      (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T)
+      (AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam))
+      (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T))) :=
+⋯
+theorem AnvBandit.Main.theorem_4_1_canonical : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (P : Fin n → Fin n → ℝ) (hP : ∀ (i j : Fin n), LE.le.{0} 0 (P i j))
+  (hrow : ∀ (i : Fin n), Eq.{1} (∑ j, P i j) 1)
+  (hirr : ∀ (a b : Fin n), Relation.ReflTransGen.{0} (fun x y => LT.lt.{0} 0 (P x y)) a b) (lam : Fin 2),
+  have C := AnvBandit.Main.canonicalContact p P hP hrow hirr;
+  LE.le.{0} (AnvBandit.TrajectoryExpectation.teamRegret M p C lam)
+    (AnvBandit.Uco (HMul.hMul.{0, 0, 0} ↑n ↑p.T) (M.Gamma lam)
+      (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T)
+      (AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam))
+      (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T))) :=
+⋯
+theorem AnvBandit.ObservedRegret.original_theorem_4_1 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          LE.le.{0} (AnvBandit.ObservedRegret.originalTeamRegret M p lam ν)
+            (AnvBandit.Uco (HMul.hMul.{0, 0, 0} ↑n ↑p.T) (M.Gamma lam)
+              (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T)
+              (AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam))
+              (HMul.hMul.{0, 0, 0} p.δ
+                (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T))) :=
+⋯
+theorem AnvBandit.ObservedRegret.original_theorem_C_4 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          ∀ (c : Fin K → ℝ),
+            (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+              Eq.{1} (c M.star) 0 →
+                LE.le.{0} (∫ (ω : AnvBandit.ExecutionLaw.Path n), AnvBandit.GlobalRegret.pathCost p c ω ∂ν)
+                  (min.{0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers c)) ↑p.T)
+                    (HAdd.hAdd.{0, 0, 0} (AnvBandit.Main.actualEcost M p C lam c)
+                      (HMul.hMul.{0, 0, 0} p.δ
+                        (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers c)) ↑p.T)))) :=
+⋯
+theorem AnvBandit.ActualExplicitRegret.actual_explicit_canonical : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (P : Fin n → Fin n → ℝ) (hP : ∀ (i j : Fin n), LE.le.{0} 0 (P i j)) (hrow : ∀ (i : Fin n), Eq.{1} (∑ j, P i j) 1)
+  (hirr : ∀ (a b : Fin n), Relation.ReflTransGen.{0} (fun x y => LT.lt.{0} 0 (P y x)) a b) (lam : Fin 2) (T h : ℕ)
+  (ξ β : ℝ) (hT : LE.le.{0} 1 T) (hh : LE.le.{0} 1 h) (hξ : LT.lt.{0} 0 ξ) (hβ : LT.lt.{0} 1 β),
+  have C := AnvBandit.ContactMatrix.ofStochasticIrreducible ⋯ P hP hrow hirr;
+  LE.le.{0}
+    (AnvBandit.TrajectoryExpectation.teamRegret M (AnvBandit.Execution.explicitParams M T h ξ β hT hh hξ hβ) C lam)
+    (AnvBandit.explicitBound M T h ξ β (AnvBandit.epsP C) lam) :=
+⋯
+theorem AnvBandit.ActualExplicitRegret.actual_time_order : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (β : ℝ) (hβ : LT.lt.{0} 1 β),
+  ∃ A,
+    LE.le.{0} 0 A ∧
+      ∀ (T h H : ℕ) (hT : LE.le.{0} 1 T) (hh : LE.le.{0} 1 h) (hH : LE.le.{0} 1 H) (hdiv : Dvd.dvd.{0} h H),
+        LE.le.{0}
+          (AnvBandit.TrajectoryExpectation.teamRegret M
+            (AnvBandit.Execution.confidenceParams M T h H β hT hh hH hdiv hβ) C lam)
+          (HMul.hMul.{0, 0, 0} A
+            (HAdd.hAdd.{0, 0, 0}
+              (HAdd.hAdd.{0, 0, 0}
+                (HAdd.hAdd.{0, 0, 0} (↑H)
+                  (HDiv.hDiv.{0, 0, 0}
+                    (HPow.hPow.{0, 0, 0} (Real.log (HAdd.hAdd.{0, 0, 0} (↑T) 1))
+                      (HDiv.hDiv.{0, 0, 0} β (HSub.hSub.{0, 0, 0} β 1)))
+                    (HPow.hPow.{0, 0, 0} (↑H)
+                      (HSub.hSub.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} β (HSub.hSub.{0, 0, 0} β 1)) 1))))
+                (Real.log (HAdd.hAdd.{0, 0, 0} (↑T) 1)))
+              1)) :=
+⋯
+theorem AnvBandit.ActualExplicitRegret.actual_Hxi_order : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (ξ β : ℝ) (hξ : LT.lt.{0} 0 ξ) (hβ : LT.lt.{0} 1 β),
+  ∃ A,
+    LE.le.{0} 0 A ∧
+      ∀ (T h : ℕ) (hT : LE.le.{0} 1 T) (hh : LE.le.{0} 1 h),
+        LE.le.{0}
+          (AnvBandit.TrajectoryExpectation.teamRegret M (AnvBandit.Execution.explicitParams M T h ξ β hT hh hξ hβ) C
+            lam)
+          (HMul.hMul.{0, 0, 0} A (HAdd.hAdd.{0, 0, 0} (↑h) (Real.log (HAdd.hAdd.{0, 0, 0} (↑T) 1)))) :=
+⋯
+theorem AnvBandit.ActualExplicitRegret.actual_fixed_h_log_order : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (ξ β : ℝ) (hξ : LT.lt.{0} 0 ξ) (hβ : LT.lt.{0} 1 β) (h : ℕ)
+  (hh : LE.le.{0} 1 h),
+  ∃ B,
+    LE.le.{0} 0 B ∧
+      ∀ (T : ℕ) (hT : LE.le.{0} 1 T),
+        LE.le.{0}
+          (AnvBandit.TrajectoryExpectation.teamRegret M (AnvBandit.Execution.explicitParams M T h ξ β hT hh hξ hβ) C
+            lam)
+          (HMul.hMul.{0, 0, 0} B (Real.log (HAdd.hAdd.{0, 0, 0} (↑T) 1))) :=
+⋯
+theorem AnvBandit.ActualExplicitRegret.actual_sublinear : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (ξ β : ℝ) (hξ : LT.lt.{0} 0 ξ) (hβ : LT.lt.{0} 1 β) (h : ℕ → ℕ)
+  (hh : ∀ (T : ℕ), LE.le.{0} 1 (h (HAdd.hAdd.{0, 0, 0} T 1))),
+  (Asymptotics.IsLittleO.{0, 0, 0} Filter.atTop.{0} (fun T => ↑(h T)) fun T => ↑T) →
+    Filter.Tendsto.{0, 0}
+      (fun T =>
+        HDiv.hDiv.{0, 0, 0}
+          (AnvBandit.TrajectoryExpectation.teamRegret M
+            (AnvBandit.Execution.explicitParams M (HAdd.hAdd.{0, 0, 0} T 1) (h (HAdd.hAdd.{0, 0, 0} T 1)) ξ β ⋯ ⋯ hξ hβ)
+            C lam)
+          (HMul.hMul.{0, 0, 0} (↑n) (HAdd.hAdd.{0, 0, 0} (↑T) 1)))
+      Filter.atTop.{0} (nhds.{0} 0) :=
+⋯
+theorem AnvBandit.BaselineRealizedReward.original_realized_regret_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.BaselineLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.BaselineLaw.executionMeasure M p lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.BaselineLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T → ∀ᵐ (ω : AnvBandit.BaselineLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+        LE.le.{0}
+          (HSub.hSub.{0, 0, 0} (AnvBandit.BaselineTrajectory.oracle M p.T lam)
+            (∫ (ω : AnvBandit.BaselineLaw.Path n), AnvBandit.BaselineRealizedReward.realizedTotal p ω ∂ν))
+          (AnvBandit.Uind (HMul.hMul.{0, 0, 0} ↑n ↑p.T) (M.Gamma lam)
+            (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T)
+            (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam)
+            (HMul.hMul.{0, 0, 0} p.δ
+              (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T))) :=
+⋯
+def AnvBandit.BaselineComparison.cooperativeBound : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → Fin 2 → ℝ :=
+fun {n K} M p C lam =>
+  AnvBandit.Uco (HMul.hMul.{0, 0, 0} ↑n ↑p.T) (M.Gamma lam)
+    (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T)
+    (AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam))
+    (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T))
+def AnvBandit.BaselineComparison.independentBound : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → Fin 2 → ℝ :=
+fun {n K} M p lam =>
+  AnvBandit.Uind (HMul.hMul.{0, 0, 0} ↑n ↑p.T) (M.Gamma lam)
+    (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T) (M.Flam (M.rho p.T lam) p.L lam)
+    (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T))
+theorem AnvBandit.BaselineComparison.corollary_4_2 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  LT.lt.{0} (AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam)) (M.Flam (M.rho p.T lam) p.L lam) →
+    LT.lt.{0}
+        (HAdd.hAdd.{0, 0, 0} (AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam))
+          (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T)))
+        (min.{0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T)
+          (HSub.hSub.{0, 0, 0} (HMul.hMul.{0, 0, 0} ↑n ↑p.T) (M.Gamma lam))) →
+      LE.le.{0} (AnvBandit.TrajectoryExpectation.teamRegret M p C lam)
+          (AnvBandit.BaselineComparison.cooperativeBound M p C lam) ∧
+        LE.le.{0} (AnvBandit.BaselineTrajectory.teamRegret M p lam)
+            (AnvBandit.BaselineComparison.independentBound M p lam) ∧
+          LT.lt.{0} (AnvBandit.BaselineComparison.cooperativeBound M p C lam)
+            (AnvBandit.BaselineComparison.independentBound M p lam) :=
+⋯
+theorem AnvBandit.Absorbing.live_mono.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (X : Ω → ℕ → Fin n → Bool) (J : Ω → ℕ → Fin n → Fin n) {a b : ℕ},
+  LE.le.{0} a b →
+    ∀ {ω : Ω}, AnvBandit.Absorbing.live.{u_1} M p lam X J b ω → AnvBandit.Absorbing.live.{u_1} M p lam X J a ω :=
+⋯
+theorem AnvBandit.Absorbing.source_mem_state.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (X : Ω → ℕ → Fin n → Bool) (J : Ω → ℕ → Fin n → Fin n) (j : ℕ)
+  (ω : Ω),
+  Membership.mem.{0, 0} (AnvBandit.Absorbing.state.{u_1} M p lam X J j ω) (AnvBandit.Execution.holder p M.star) :=
+⋯
+theorem AnvBandit.Absorbing.terminal_potential.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (X : Ω → ℕ → Fin n → Bool) (J : Ω → ℕ → Fin n → Fin n)
+  (C : AnvBandit.ContactMatrix n) (j : ℕ),
+  LE.le.{0} p.T (p.phaseEnd j) →
+    ∀ (ω : Ω),
+      Eq.{1}
+        (AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star) (AnvBandit.Absorbing.state.{u_1} M p lam X J j ω))
+        0 :=
+⋯
+theorem AnvBandit.Absorbing.contact_integral_drift : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K)
+  (C : AnvBandit.ContactMatrix n) (k : Fin K) (s : AnvBandit.Execution.State n K),
+  LE.le.{0} (↑(Finset.card.{0} (sdiff.{0} Finset.univ.{0} (AnvBandit.Execution.holders k s))))
+    (HAdd.hAdd.{0, 0, 0}
+      (HSub.hSub.{0, 0, 0} (AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p k) (AnvBandit.Execution.holders k s))
+        (∫ (R : Fin n → Fin n),
+          AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p k)
+            (AnvBandit.Execution.holders k (AnvBandit.Execution.communicate s R)) ∂AnvBandit.stepDist C))
+      (HMul.hMul.{0, 0, 0} (AnvBandit.M1 ⋯ C (AnvBandit.Execution.holder p k))
+        (ite.{1} (AnvBandit.Absorbing.wrong k s) 1 0))) :=
+⋯
+theorem AnvBandit.Absorbing.absorbed_contact_drift.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (X : Ω → ℕ → Fin n → Bool)
+  (J : Ω → ℕ → Fin n → Fin n) (j : ℕ) (ω : Ω),
+  LE.le.{0} (↑(Finset.card.{0} (sdiff.{0} Finset.univ.{0} (AnvBandit.Absorbing.state.{u_1} M p lam X J j ω))))
+    (HAdd.hAdd.{0, 0, 0}
+      (HSub.hSub.{0, 0, 0}
+        (AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star) (AnvBandit.Absorbing.state.{u_1} M p lam X J j ω))
+        (∫ (R : Fin n → Fin n),
+          AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star)
+            (AnvBandit.Absorbing.nextState.{u_1} M p lam X J j ω R) ∂AnvBandit.stepDist C))
+      (HMul.hMul.{0, 0, 0} (AnvBandit.M1 ⋯ C (AnvBandit.Execution.holder p M.star))
+        (AnvBandit.Absorbing.error.{u_1} M p lam X J j ω))) :=
+⋯
+theorem AnvBandit.Absorbing.blamed_minimal : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K) (k : Fin K)
+  (s : AnvBandit.Execution.State n K),
+  AnvBandit.Absorbing.wrong k s →
+    ∀ (i : Fin n),
+      Membership.mem.{0, 0} (AnvBandit.Execution.holders k s) i →
+        Ne.{1} (s.nodes i).cache k → LE.le.{0} (AnvBandit.Absorbing.blamed p k s) i :=
+⋯
+theorem AnvBandit.Absorbing.erroneous_phase_half : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (X : ℕ → Fin n → ℝ) (J : ℕ → Fin n → Fin n) (ℓ : ℕ),
+  LE.le.{0} 1 ℓ →
+    LE.le.{0} (p.phaseEnd ℓ) p.T →
+      AnvBandit.Absorbing.wrong M.star (AnvBandit.Execution.preBoundary p X J ℓ) →
+        LE.le.{0} (HSub.hSub.{0, 0, 0} (p.phaseEnd ℓ) (p.phaseEnd (HSub.hSub.{0, 0, 0} ℓ 1)))
+          (HMul.hMul.{0, 0, 0} 2
+            (∑
+              k ∈
+                Finset.erase.{0}
+                  ((AnvBandit.Execution.preBoundary p X J ℓ).nodes
+                      (AnvBandit.Absorbing.blamed p M.star (AnvBandit.Execution.preBoundary p X J ℓ))).active
+                  M.star,
+              ((AnvBandit.Execution.preBoundary p X J ℓ).nodes
+                    (AnvBandit.Absorbing.blamed p M.star (AnvBandit.Execution.preBoundary p X J ℓ))).C
+                k)) :=
+⋯
+def AnvBandit.Absorbing.prefixGood.{u_1} : {n K : ℕ} →
+  {Ω : Type u_1} →
+    AnvBandit.DecayModel n K →
+      AnvBandit.Execution.Params n K → Fin 2 → (Ω → ℕ → Fin n → Bool) → (Ω → ℕ → Fin n → Fin n) → ℕ → Ω → Prop :=
+fun {n K} {Ω} M p lam X J t ω =>
+  Membership.mem.{u_1, u_1}
+    (AnvBandit.ObservedPrefix.good.{u_1} (AnvBandit.ExecutionBounds.selected.{u_1} p X J)
+      (AnvBandit.ExecutionBounds.reward.{u_1} X) (AnvBandit.ExecutionBounds.mean.{u_1} M p lam X J) t p.L)
+    ω
+def AnvBandit.Absorbing.live.{u_1} : {n K : ℕ} →
+  {Ω : Type u_1} →
+    AnvBandit.DecayModel n K →
+      AnvBandit.Execution.Params n K → Fin 2 → (Ω → ℕ → Fin n → Bool) → (Ω → ℕ → Fin n → Fin n) → ℕ → Ω → Prop :=
+fun {n K} {Ω} M p lam X J j ω =>
+  LT.lt.{0} (p.phaseEnd j) p.T ∧ AnvBandit.Absorbing.prefixGood.{u_1} M p lam X J (p.phaseEnd j) ω
+def AnvBandit.Absorbing.state.{u_1} : {n K : ℕ} →
+  {Ω : Type u_1} →
+    AnvBandit.DecayModel n K →
+      AnvBandit.Execution.Params n K →
+        Fin 2 → (Ω → ℕ → Fin n → Bool) → (Ω → ℕ → Fin n → Fin n) → ℕ → Ω → Finset.{0} (Fin n) :=
+fun {n K} {Ω} M p lam X J j ω =>
+  ite.{1} (AnvBandit.Absorbing.live.{u_1} M p lam X J j ω)
+    (AnvBandit.Execution.holders M.star
+      (AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) (p.phaseEnd j)))
+    Finset.univ.{0}
+def AnvBandit.Absorbing.error.{u_1} : {n K : ℕ} →
+  {Ω : Type u_1} →
+    AnvBandit.DecayModel n K →
+      AnvBandit.Execution.Params n K → Fin 2 → (Ω → ℕ → Fin n → Bool) → (Ω → ℕ → Fin n → Fin n) → ℕ → Ω → ℝ :=
+fun {n K} {Ω} M p lam X J j ω =>
+  ite.{1}
+    (AnvBandit.Absorbing.live.{u_1} M p lam X J (HAdd.hAdd.{0, 0, 0} j 1) ω ∧
+      AnvBandit.Absorbing.wrong M.star
+        (AnvBandit.Execution.preBoundary p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) (HAdd.hAdd.{0, 0, 0} j 1)))
+    1 0
+theorem AnvBandit.Absorbing.conditional_contact_integral : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (t : ℕ)
+  (f : Prod.{0, 0} (AnvBandit.Absorbing.Precontact n t) (Fin n → Fin n) → ℝ),
+  (MeasureTheory.condExp.{0, 0} (MeasurableSpace.comap.{0, 0} (AnvBandit.Absorbing.beforeContact t) inferInstance.{1})
+      (AnvBandit.ExecutionLaw.executionMeasure M p C lam) fun ω =>
+      f
+        (Prod.mk.{0, 0} (AnvBandit.Absorbing.beforeContact t ω)
+          (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)) =ᵐ[AnvBandit.ExecutionLaw.executionMeasure M p C lam]
+    fun ω =>
+    ∫ (R : Fin n → Fin n),
+      f
+        (Prod.mk.{0, 0} (AnvBandit.Absorbing.beforeContact t ω)
+          R) ∂PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C) :=
+⋯
+theorem AnvBandit.Absorbing.prefixGood_beforeContact : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (t v : ℕ),
+  LE.le.{0} v (HAdd.hAdd.{0, 0, 0} t 1) →
+    ∀ {ω ω' : AnvBandit.ExecutionLaw.Path n},
+      Eq.{1} (AnvBandit.Absorbing.beforeContact t ω) (AnvBandit.Absorbing.beforeContact t ω') →
+        (AnvBandit.Absorbing.prefixGood.{0} M p lam AnvBandit.ExecutionLaw.pathRewards
+            (AnvBandit.ExecutionLaw.pathContacts p) v ω ↔
+          AnvBandit.Absorbing.prefixGood.{0} M p lam AnvBandit.ExecutionLaw.pathRewards
+            (AnvBandit.ExecutionLaw.pathContacts p) v ω') :=
+⋯
+theorem AnvBandit.Absorbing.conditional_next_potential : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (j : ℕ),
+  have t := HSub.hSub.{0, 0, 0} (p.phaseEnd (HAdd.hAdd.{0, 0, 0} j 1)) 1;
+  (MeasureTheory.condExp.{0, 0} (MeasurableSpace.comap.{0, 0} (AnvBandit.Absorbing.beforeContact t) inferInstance.{1})
+      (AnvBandit.ExecutionLaw.executionMeasure M p C lam) fun ω =>
+      AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star)
+        (AnvBandit.Absorbing.state.{0} M p lam AnvBandit.ExecutionLaw.pathRewards
+          (AnvBandit.ExecutionLaw.pathContacts p) (HAdd.hAdd.{0, 0, 0} j 1)
+          ω)) =ᵐ[AnvBandit.ExecutionLaw.executionMeasure M p C lam]
+    fun ω =>
+    ∫ (R : Fin n → Fin n),
+      AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star)
+        (AnvBandit.Absorbing.nextState.{0} M p lam AnvBandit.ExecutionLaw.pathRewards
+          (AnvBandit.ExecutionLaw.pathContacts p) j ω
+          R) ∂PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C) :=
+⋯
+theorem AnvBandit.Absorbing.reliable_step.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (X : Ω → ℕ → Fin n → Bool) (J : Ω → ℕ → Fin n → Fin n) (j : ℕ),
+  LE.le.{0} (AnvBandit.ActualPropagation.preparation M p) j →
+    ∀ (ω : Ω),
+      AnvBandit.infStep (J ω (HAdd.hAdd.{0, 0, 0} j 1)) (AnvBandit.Absorbing.state.{u_1} M p lam X J j ω) ⊆
+        AnvBandit.Absorbing.state.{u_1} M p lam X J (HAdd.hAdd.{0, 0, 0} j 1) ω :=
+⋯
+theorem AnvBandit.Absorbing.ideal_subset_state.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (X : Ω → ℕ → Fin n → Bool) (J : Ω → ℕ → Fin n → Fin n) (j : ℕ)
+  (ω : Ω),
+  AnvBandit.Inform (AnvBandit.ActualPropagation.shiftedContacts M p (J ω))
+      (singleton.{0, 0} (AnvBandit.Execution.holder p M.star)) j ⊆
+    AnvBandit.Absorbing.state.{u_1} M p lam X J (HAdd.hAdd.{0, 0, 0} (AnvBandit.ActualPropagation.preparation M p) j)
+      ω :=
+⋯
+theorem AnvBandit.Absorbing.potential_le_ideal.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (X : Ω → ℕ → Fin n → Bool)
+  (J : Ω → ℕ → Fin n → Fin n) (j : ℕ) (ω : Ω),
+  LE.le.{0}
+    (AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star)
+      (AnvBandit.Absorbing.state.{u_1} M p lam X J (HAdd.hAdd.{0, 0, 0} (AnvBandit.ActualPropagation.preparation M p) j)
+        ω))
+    (AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star)
+      (AnvBandit.Inform (AnvBandit.ActualPropagation.shiftedContacts M p (J ω))
+        (singleton.{0, 0} (AnvBandit.Execution.holder p M.star)) j)) :=
+⋯
+theorem AnvBandit.Absorbing.conditional_absorbed_drift : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (j : ℕ),
+  have t := HSub.hSub.{0, 0, 0} (p.phaseEnd (HAdd.hAdd.{0, 0, 0} j 1)) 1;
+  ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam,
+    LE.le.{0}
+      (↑(Finset.card.{0}
+          (sdiff.{0} Finset.univ.{0}
+            (AnvBandit.Absorbing.state.{0} M p lam AnvBandit.ExecutionLaw.pathRewards
+              (AnvBandit.ExecutionLaw.pathContacts p) j ω))))
+      (HAdd.hAdd.{0, 0, 0}
+        (HSub.hSub.{0, 0, 0}
+          (AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star)
+            (AnvBandit.Absorbing.state.{0} M p lam AnvBandit.ExecutionLaw.pathRewards
+              (AnvBandit.ExecutionLaw.pathContacts p) j ω))
+          (MeasureTheory.condExp.{0, 0}
+            (MeasurableSpace.comap.{0, 0} (AnvBandit.Absorbing.beforeContact t) inferInstance.{1})
+            (AnvBandit.ExecutionLaw.executionMeasure M p C lam)
+            (fun ω =>
+              AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star)
+                (AnvBandit.Absorbing.state.{0} M p lam AnvBandit.ExecutionLaw.pathRewards
+                  (AnvBandit.ExecutionLaw.pathContacts p) (HAdd.hAdd.{0, 0, 0} j 1) ω))
+            ω))
+        (HMul.hMul.{0, 0, 0} (AnvBandit.M1 ⋯ C (AnvBandit.Execution.holder p M.star))
+          (AnvBandit.Absorbing.error.{0} M p lam AnvBandit.ExecutionLaw.pathRewards
+            (AnvBandit.ExecutionLaw.pathContacts p) j ω))) :=
+⋯
+theorem AnvBandit.Absorbing.actual_error_budget_personal.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1}
+  (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (X : Ω → ℕ → Fin n → Bool)
+  (J : Ω → ℕ → Fin n → Fin n) (ω : Ω) (Ph : ℕ),
+  LE.le.{0}
+    (∑ ℓ ∈ AnvBandit.Absorbing.erroneousPhases.{u_1} M p lam X J ω Ph,
+      HSub.hSub.{0, 0, 0} (p.phaseEnd ℓ) (p.phaseEnd (HSub.hSub.{0, 0, 0} ℓ 1)))
+    (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} 2 n) (∑ k ∈ M.others, M.mkAll p.L k)) :=
+⋯
+theorem AnvBandit.Absorbing.erroneous_phases_charge : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (X : ℕ → Fin n → ℝ) (J : ℕ → Fin n → Fin n) (F : Finset.{0} ℕ),
+  (∀ (ℓ : ℕ), Membership.mem.{0, 0} F ℓ → LE.le.{0} 1 ℓ) →
+    (∀ (ℓ : ℕ), Membership.mem.{0, 0} F ℓ → LE.le.{0} (p.phaseEnd ℓ) p.T) →
+      (∀ (ℓ : ℕ),
+          Membership.mem.{0, 0} F ℓ → AnvBandit.Absorbing.wrong M.star (AnvBandit.Execution.preBoundary p X J ℓ)) →
+        LE.le.{0} (∑ ℓ ∈ F, HSub.hSub.{0, 0, 0} (p.phaseEnd ℓ) (p.phaseEnd (HSub.hSub.{0, 0, 0} ℓ 1)))
+          (HMul.hMul.{0, 0, 0} 2
+            (∑ i, ∑ k ∈ M.others, Finset.card.{0} (AnvBandit.Absorbing.chargedTimes M p X J F i k))) :=
+⋯
+theorem AnvBandit.Absorbing.state_measurable_beforeContact : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (j : ℕ),
+  have t := HSub.hSub.{0, 0, 0} (p.phaseEnd (HAdd.hAdd.{0, 0, 0} j 1)) 1;
+  Measurable.{0, 0}
+    (AnvBandit.Absorbing.state.{0} M p lam AnvBandit.ExecutionLaw.pathRewards (AnvBandit.ExecutionLaw.pathContacts p)
+      j) :=
+⋯
+theorem AnvBandit.Absorbing.error_measurable_beforeContact : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (j : ℕ),
+  have t := HSub.hSub.{0, 0, 0} (p.phaseEnd (HAdd.hAdd.{0, 0, 0} j 1)) 1;
+  Measurable.{0, 0}
+    (AnvBandit.Absorbing.error.{0} M p lam AnvBandit.ExecutionLaw.pathRewards (AnvBandit.ExecutionLaw.pathContacts p)
+      j) :=
+⋯
+theorem AnvBandit.Absorbing.prefixGood_measurable_beforeContact : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (j : ℕ),
+  have t := HSub.hSub.{0, 0, 0} (p.phaseEnd (HAdd.hAdd.{0, 0, 0} j 1)) 1;
+  MeasurableSet.{0}
+    (setOf.{0} fun ω =>
+      AnvBandit.Absorbing.prefixGood.{0} M p lam AnvBandit.ExecutionLaw.pathRewards
+        (AnvBandit.ExecutionLaw.pathContacts p) (p.phaseEnd (HAdd.hAdd.{0, 0, 0} j 1)) ω) :=
+⋯
+theorem AnvBandit.Absorbing.actual_error_budget_series.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (X : Ω → ℕ → Fin n → Bool) (J : Ω → ℕ → Fin n → Fin n) (ω : Ω),
+  LE.le.{0}
+    (∑' (j : ℕ),
+      HMul.hMul.{0, 0, 0} (AnvBandit.dEll (↑p.H) p.β (HAdd.hAdd.{0, 0, 0} j 1))
+        (AnvBandit.Absorbing.error.{u_1} M p lam X J j ω))
+    (HMul.hMul.{0, 0, 0} 2 (M.Flam (AnvBandit.Absorbing.unitCost M) p.L lam)) :=
+⋯
+theorem AnvBandit.Absorbing.finite_telescope_with_budget : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (Ph : ℕ),
+  LE.le.{0}
+    (∑ j ∈ Finset.range Ph,
+      HMul.hMul.{0, 0, 0} (AnvBandit.dEll (↑p.H) p.β (HAdd.hAdd.{0, 0, 0} j 1))
+        (AnvBandit.Absorbing.expectedMissing M p C lam j))
+    (HAdd.hAdd.{0, 0, 0}
+      (∑ j ∈ Finset.range Ph,
+        HMul.hMul.{0, 0, 0}
+          (AnvBandit.posPart
+            (HSub.hSub.{0, 0, 0} (AnvBandit.dEll (↑p.H) p.β (HAdd.hAdd.{0, 0, 0} j 1)) (AnvBandit.dEll (↑p.H) p.β j)))
+          (AnvBandit.Absorbing.expectedPotential M p C lam j))
+      (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} 2 (AnvBandit.M1 ⋯ C (AnvBandit.Execution.holder p M.star)))
+        (M.Flam (AnvBandit.Absorbing.unitCost M) p.L lam))) :=
+⋯
+theorem AnvBandit.integral_Vpot_inform_eq_remainingV : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) (i0 : Fin n) (j : ℕ),
+      Eq.{1}
+        (∫ (R : ℕ → Fin n → Fin n),
+          AnvBandit.Vpot hd C i0 (AnvBandit.Inform R (singleton.{0, 0} i0) j) ∂AnvBandit.stepMeasure C)
+        (AnvBandit.remainingV hd C i0 j) :=
+⋯
+theorem AnvBandit.Absorbing.expectedPotential_le_remaining : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (j : ℕ),
+  LE.le.{0} (AnvBandit.Absorbing.expectedPotential M p C lam j)
+    (AnvBandit.remainingV ⋯ C (AnvBandit.Execution.holder p M.star)
+      (HSub.hSub.{0, 0, 0} j (AnvBandit.ActualPropagation.preparation M p))) :=
+⋯
+theorem AnvBandit.concreteKbeta_summable : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) (i0 : Fin n)
+  {H β : ℝ},
+  LE.le.{0} 0 H →
+    LT.lt.{0} 1 β →
+      ∀ (r : ℕ),
+        Summable.{0, 0} fun ℓ =>
+          HMul.hMul.{0, 0, 0} (AnvBandit.scheduleOmega H β (HAdd.hAdd.{0, 0, 0} ℓ 1))
+            (AnvBandit.remainingV ⋯ C i0 (HSub.hSub.{0, 0, 0} ℓ r)) :=
+⋯
+theorem AnvBandit.Absorbing.goodLoss_le_exploration_phases : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      LE.le.{0} (AnvBandit.GlobalRegret.goodLoss M p C lam c)
+        (HAdd.hAdd.{0, 0, 0} (M.Flam c p.L lam)
+          (HMul.hMul.{0, 0, 0} (M.supOthers c)
+            (∑ j ∈ Finset.range p.T,
+              HMul.hMul.{0, 0, 0} (AnvBandit.dEll (↑p.H) p.β (HAdd.hAdd.{0, 0, 0} j 1))
+                (AnvBandit.Absorbing.expectedMissing M p C lam j)))) :=
+⋯
+theorem AnvBandit.Absorbing.weighted_loss_potential_branch : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      LE.le.{0} (AnvBandit.GlobalRegret.goodLoss M p C lam c)
+        (HAdd.hAdd.{0, 0, 0} (M.Flam c p.L lam)
+          (HMul.hMul.{0, 0, 0} (M.supOthers c)
+            (HAdd.hAdd.{0, 0, 0}
+              (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} 2 (AnvBandit.M1 ⋯ C (AnvBandit.Execution.holder p M.star)))
+                (M.Flam (AnvBandit.Absorbing.unitCost M) p.L lam))
+              (AnvBandit.concreteKbeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H) p.β
+                (AnvBandit.ActualPropagation.preparation M p))))) :=
+⋯
+theorem AnvBandit.Absorbing.lastPhase_eq_one : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K),
+  LE.le.{0} p.T p.H → Eq.{1} (AnvBandit.Absorbing.lastPhase p) 1 :=
+⋯
+def AnvBandit.Absorbing.lastPhase : {n K : ℕ} → AnvBandit.Execution.Params n K → ℕ :=
+fun {n K} p => Nat.find ⋯
+def AnvBandit.GlobalRegret.goodLoss : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → Fin 2 → (Fin K → ℝ) → ℝ :=
+fun {n K} M p C lam c =>
+  ∫ (ω : AnvBandit.ExecutionLaw.Path n),
+    AnvBandit.GlobalRegret.goodCost M p lam c ω ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam
+def AnvBandit.concreteKbeta : {n : ℕ} →
+  LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1) → AnvBandit.ContactMatrix n → Fin n → ℝ → ℝ → ℕ → ℝ :=
+fun {n} hd C i0 H β r => AnvBandit.Kbeta (AnvBandit.scheduleOmega H β) (AnvBandit.remainingV hd C i0) r
+def AnvBandit.remainingV : {n : ℕ} →
+  LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1) → AnvBandit.ContactMatrix n → Fin n → ℕ → ℝ :=
+fun {n} hd C i0 j =>
+  ∑ i,
+    (∫⁻ (ω : ℕ → Fin (HSub.hSub.{0, 0, 0} n 1) → Fin n → Fin n),
+        ENNReal.ofReal
+          (max.{0} (HSub.hSub.{0, 0, 0} (AnvBandit.sigmaR hd ω i0 i) ↑j)
+            0) ∂AnvBandit.procMeasure C (HSub.hSub.{0, 0, 0} n 1)).toReal
+def AnvBandit.scheduleOmega : ℝ → ℝ → ℕ → ℝ :=
+fun H β ℓ =>
+  AnvBandit.posPart (HSub.hSub.{0, 0, 0} (AnvBandit.dEll H β ℓ) (AnvBandit.dEll H β (HSub.hSub.{0, 0, 0} ℓ 1)))
+theorem AnvBandit.psi_anti : ∀ {f : ℕ → ℝ},
+  Antitone.{0, 0} f →
+    ∀ (m : ℕ), LE.le.{0} 1 m → LE.le.{0} (AnvBandit.psi f (HAdd.hAdd.{0, 0, 0} m 1)) (AnvBandit.psi f m) :=
+⋯
+theorem AnvBandit.psi_tendsto : ∀ {f : ℕ → ℝ},
+  Filter.Tendsto.{0, 0} f Filter.atTop.{0} (nhds.{0} 0) →
+    Filter.Tendsto.{0, 0} (AnvBandit.psi f) Filter.atTop.{0} (nhds.{0} 0) :=
+⋯
+theorem AnvBandit.DecayModel.prefix_bounds : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) {p : Fin K → ℕ → ℝ},
+  M.AdaptMeanInGap p →
+    ∀ {k : Fin K} {m : ℕ},
+      LE.le.{0} 1 m →
+        LE.le.{0} (M.b k) (HDiv.hDiv.{0, 0, 0} (∑ s ∈ Finset.range m, p k (HAdd.hAdd.{0, 0, 0} s 1)) ↑m) ∧
+          LE.le.{0} (HDiv.hDiv.{0, 0, 0} (∑ s ∈ Finset.range m, p k (HAdd.hAdd.{0, 0, 0} s 1)) ↑m)
+            (HAdd.hAdd.{0, 0, 0} (M.b k) (AnvBandit.psi (M.f k) m)) :=
+⋯
+theorem AnvBandit.DecayModel.Phi_tail_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (k : Fin K) {m u : ℕ},
+  LE.le.{0} m u →
+    LE.le.{0} 1 u →
+      LE.le.{0} (HSub.hSub.{0, 0, 0} (AnvBandit.Phi (M.f k) u) (AnvBandit.Phi (M.f k) m))
+        (HMul.hMul.{0, 0, 0} (↑(HSub.hSub.{0, 0, 0} u m)) (AnvBandit.psi (M.f k) u)) :=
+⋯
+theorem AnvBandit.DecayModel.DeltaMin_pos : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K), LT.lt.{0} 0 M.DeltaMin :=
+⋯
+theorem AnvBandit.batch_inequality : ∀ {v : ℕ → ℝ},
+  (∀ (s : ℕ), LE.le.{0} 0 (v s)) →
+    Antitone.{0, 0} v →
+      ∀ (n : ℕ) (xs : List.{0} ℕ),
+        (∀ (x : ℕ), Membership.mem.{0, 0} xs x → LE.le.{0} 1 x) →
+          (∀ (x : ℕ), Membership.mem.{0, 0} xs x → LE.le.{0} x n) →
+            LE.le.{0} 0 (HSub.hSub.{0, 0, 0} (AnvBandit.syncVal v 0 xs) (AnvBandit.serialVal v 0 xs)) ∧
+              LE.le.{0} (HSub.hSub.{0, 0, 0} (AnvBandit.syncVal v 0 xs) (AnvBandit.serialVal v 0 xs))
+                (HMul.hMul.{0, 0, 0} (↑(HSub.hSub.{0, 0, 0} n 1)) (v (HAdd.hAdd.{0, 0, 0} 0 1))) :=
+⋯
+theorem AnvBandit.DecayModel.syncAlloc_sub_serialAlloc_le : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (b : Fin K → List.{0} ℕ),
+  (∀ (k : Fin K) (x : ℕ), Membership.mem.{0, 0} (b k) x → LE.le.{0} 1 x) →
+    (∀ (k : Fin K) (x : ℕ), Membership.mem.{0, 0} (b k) x → LE.le.{0} x n) →
+      LE.le.{0} (HSub.hSub.{0, 0, 0} (M.syncAlloc b) (M.serialAlloc fun k => List.sum.{0} (b k)))
+        (HMul.hMul.{0, 0, 0} (↑(HSub.hSub.{0, 0, 0} n 1)) M.A) :=
+⋯
+theorem AnvBandit.Hxi_bracket : ∀ (h : ℕ),
+  LT.lt.{0} 0 h →
+    ∀ {ξ L : ℝ},
+      LE.le.{0} 0 (HMul.hMul.{0, 0, 0} ξ L) →
+        LE.le.{0} (HMul.hMul.{0, 0, 0} ξ L) ↑(AnvBandit.Hxi h ξ L) ∧
+          LT.lt.{0} (↑(AnvBandit.Hxi h ξ L)) (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} ξ L) ↑h) :=
+⋯
+theorem AnvBandit.two_rdelta_lt : ∀ (L Δ : ℝ),
+  LE.le.{0} 0 L →
+    LT.lt.{0} 0 Δ →
+      ∀ {m : ℕ},
+        LE.le.{0} (AnvBandit.nk L Δ) m →
+          LT.lt.{0} (HMul.hMul.{0, 0, 0} 2 (AnvBandit.rdelta L m)) (HDiv.hDiv.{0, 0, 0} Δ 2) :=
+⋯
+theorem AnvBandit.DecayModel.lemma_A2 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) {L : ℝ} {bhat p : Fin K → ℕ → ℝ},
+  M.AdaptMeanInGap p →
+    AnvBandit.DecayModel.ConcEvent L bhat p →
+      ∀ {k : Fin K} {m ms : ℕ},
+        LE.le.{0} 1 m →
+          LE.le.{0} 1 ms →
+            LE.le.{0} (HAdd.hAdd.{0, 0, 0} (bhat M.star ms) (AnvBandit.rdelta L ms))
+                (HAdd.hAdd.{0, 0, 0} (bhat k m) (AnvBandit.rdelta L m)) →
+              LE.le.{0} (M.gap k)
+                (HAdd.hAdd.{0, 0, 0} (AnvBandit.psi (M.f k) m) (HMul.hMul.{0, 0, 0} 2 (AnvBandit.rdelta L m))) :=
+⋯
+theorem AnvBandit.DecayModel.not_selected_of_ge_mk : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) {L : ℝ}
+  {bhat p : Fin K → ℕ → ℝ},
+  M.AdaptMeanInGap p →
+    AnvBandit.DecayModel.ConcEvent L bhat p →
+      LE.le.{0} 0 L →
+        ∀ {k : Fin K} (hk : Ne.{1} k M.star) {m ms : ℕ},
+          LE.le.{0} 1 m →
+            LE.le.{0} 1 ms →
+              LE.le.{0} (M.mkThr L k hk) m →
+                LE.le.{0} (HAdd.hAdd.{0, 0, 0} (bhat M.star ms) (AnvBandit.rdelta L ms))
+                    (HAdd.hAdd.{0, 0, 0} (bhat k m) (AnvBandit.rdelta L m)) →
+                  False :=
+⋯
+theorem AnvBandit.theorem_4_1 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (T : ℕ) (δ : ℝ) (lam : Fin 2)
+  (caps : AnvBandit.Props) (Flam Clam0 ClamDP Flamc ρmax Rteam : ℝ),
+  LE.le.{0} Rteam (HMul.hMul.{0, 0, 0} ↑n ↑T) →
+    LE.le.{0} Rteam (HAdd.hAdd.{0, 0, 0} (M.Gamma lam) (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) ρmax) ↑T)) →
+      LE.le.{0} Rteam
+          (HAdd.hAdd.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (M.Gamma lam) (AnvBandit.Eglob n ρmax caps.Pβ Clam0))
+            (HMul.hMul.{0, 0, 0} δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) ρmax) ↑T))) →
+        LE.le.{0} Rteam
+            (HAdd.hAdd.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (M.Gamma lam) (AnvBandit.Enode ρmax caps.Aβ ClamDP))
+              (HMul.hMul.{0, 0, 0} δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) ρmax) ↑T))) →
+          LE.le.{0} Rteam
+              (HAdd.hAdd.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (M.Gamma lam) (AnvBandit.Epot Flam ρmax caps.M1 Flamc caps.Kβ))
+                (HMul.hMul.{0, 0, 0} δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) ρmax) ↑T))) →
+            LE.le.{0} Rteam
+              (AnvBandit.Uco (HMul.hMul.{0, 0, 0} ↑n ↑T) (M.Gamma lam)
+                (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) ρmax) ↑T)
+                (AnvBandit.Ecost (AnvBandit.Eglob n ρmax caps.Pβ Clam0) (AnvBandit.Enode ρmax caps.Aβ ClamDP)
+                  (AnvBandit.Epot Flam ρmax caps.M1 Flamc caps.Kβ))
+                (HMul.hMul.{0, 0, 0} δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) ρmax) ↑T))) :=
+⋯
+theorem AnvBandit.corollary_4_2 : ∀ {n : ℕ} (T : ℕ) (Γ ncmaxT Flamc Eco δ : ℝ),
+  LT.lt.{0} Eco Flamc →
+    LT.lt.{0} (HAdd.hAdd.{0, 0, 0} Eco (HMul.hMul.{0, 0, 0} δ ncmaxT))
+        (min.{0} ncmaxT (HSub.hSub.{0, 0, 0} (HMul.hMul.{0, 0, 0} ↑n ↑T) Γ)) →
+      LT.lt.{0} (AnvBandit.Uco (HMul.hMul.{0, 0, 0} ↑n ↑T) Γ ncmaxT Eco (HMul.hMul.{0, 0, 0} δ ncmaxT))
+        (AnvBandit.Uind (HMul.hMul.{0, 0, 0} ↑n ↑T) Γ ncmaxT Flamc (HMul.hMul.{0, 0, 0} δ ncmaxT)) :=
+⋯
+theorem AnvBandit.proposition_A_5 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (T : ℕ) (lam : Fin 2) (Rteam Rb : ℝ)
+  (EMk : Fin K → ℝ),
+  (∀ (k : Fin K), Membership.mem.{0, 0} M.others k → LE.le.{0} 0 (EMk k)) →
+    LE.le.{0} Rteam (HAdd.hAdd.{0, 0, 0} (M.Gamma lam) (∑ k ∈ M.others, HMul.hMul.{0, 0, 0} (M.rho T lam k) (EMk k))) →
+      Eq.{1} Rb (∑ k ∈ M.others, HMul.hMul.{0, 0, 0} (M.gap k) (EMk k)) →
+        LE.le.{0} Rteam
+          (HAdd.hAdd.{0, 0, 0} (M.Gamma lam)
+            (HMul.hMul.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} 1 (HDiv.hDiv.{0, 0, 0} (M.eps T lam) M.DeltaMin)) Rb)) :=
+⋯
+theorem AnvBandit.theorem_4_1_timeorder_Hxi : ∀ (ξ : ℝ),
+  LT.lt.{0} 0 ξ →
+    ∀ (R : ℕ → ℝ) (h : ℕ),
+      (∃ C0 Ch Clog,
+          LE.le.{0} 0 C0 ∧
+            LE.le.{0} 0 Ch ∧
+              LE.le.{0} 0 Clog ∧
+                ∀ (T : ℕ),
+                  LE.le.{0} (R T)
+                    (HAdd.hAdd.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} C0 (HMul.hMul.{0, 0, 0} Ch ↑h))
+                      (HMul.hMul.{0, 0, 0} Clog (Real.log (HAdd.hAdd.{0, 0, 0} (↑T) 1))))) →
+        ∃ C,
+          LE.le.{0} 0 C ∧
+            ∃ N,
+              ∀ (T : ℕ),
+                GE.ge.{0} T N →
+                  LE.le.{0} (R T)
+                    (HMul.hMul.{0, 0, 0} C (HAdd.hAdd.{0, 0, 0} (↑h) (Real.log (HAdd.hAdd.{0, 0, 0} (↑T) 1)))) :=
+⋯
+theorem AnvBandit.theorem_C_4 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (T h : ℕ) (δ β : ℝ),
+  LT.lt.{0} 1 β →
+    ∀ (c : Fin K → ℝ) (L : ℝ) (lam : Fin 2),
+      (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+        ∀ (Lc Elam : ℝ),
+          LE.le.{0} Lc (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers fun k => c k)) ↑T) →
+            LE.le.{0} Lc
+                (HAdd.hAdd.{0, 0, 0} Elam
+                  (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} δ ↑n) (M.supOthers fun k => c k))
+                    ↑T)) →
+              LE.le.{0} Lc
+                (min.{0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers fun k => c k)) ↑T)
+                  (HAdd.hAdd.{0, 0, 0} Elam
+                    (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} δ ↑n) (M.supOthers fun k => c k))
+                      ↑T))) :=
+⋯
+theorem AnvBandit.proposition_C_5 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (T : ℕ) (δ : ℝ) (c : Fin K → ℝ) (L : ℝ)
+  (lam : Fin 2),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    ∀ (Lind : ℝ),
+      LE.le.{0} Lind (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers fun k => c k)) ↑T) →
+        LE.le.{0} Lind
+            (HAdd.hAdd.{0, 0, 0} (M.Flam c L lam)
+              (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} δ ↑n) (M.supOthers fun k => c k)) ↑T)) →
+          LE.le.{0} Lind
+            (min.{0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers fun k => c k)) ↑T)
+              (HAdd.hAdd.{0, 0, 0} (M.Flam c L lam)
+                (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} δ ↑n) (M.supOthers fun k => c k))
+                  ↑T))) :=
+⋯
+theorem AnvBandit.lemma_B_3 : ∀ {H β B uH : ℝ},
+  LT.lt.{0} 0 H →
+    LT.lt.{0} 1 β →
+      LE.le.{0} 0 B →
+        Eq.{1} uH
+            (HPow.hPow.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} B H) 2) β)
+              (HDiv.hDiv.{0, 0, 0} 1 (HSub.hSub.{0, 0, 0} β 1))) →
+          LE.le.{0} (AnvBandit.rH H β B uH) (Nat.ceil.{0} uH) ∧
+            ∀ (ℓ : ℕ), LT.lt.{0} (AnvBandit.rH H β B uH) ℓ → LT.lt.{0} B (AnvBandit.dEll H β ℓ) :=
+⋯
+theorem AnvBandit.subgaussian_centered.{u_1} : ∀ {Ω : Type u_1} [inst : MeasurableSpace.{u_1} Ω]
+  {μ : MeasureTheory.Measure.{u_1} Ω} [MeasureTheory.IsProbabilityMeasure.{u_1} μ] (X : ℕ → Ω → ℝ) (p : ℕ → ℝ)
+  (a b : ℝ),
+  (∀ (s : ℕ), AEMeasurable.{u_1, 0} (X s) μ) →
+    (∀ (s : ℕ), ∀ᵐ (ω : Ω) ∂μ, Membership.mem.{0, 0} (Set.Icc.{0} a b) (X s ω)) →
+      (∀ (s : ℕ), Eq.{1} (∫ (x : Ω), X s x ∂μ) (p s)) →
+        ∀ (s : ℕ),
+          ProbabilityTheory.HasSubgaussianMGF.{u_1} (fun ω => HSub.hSub.{0, 0, 0} (X s ω) (p s))
+            (HPow.hPow.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} (nnnorm.{0} (HSub.hSub.{0, 0, 0} b a)) 2) 2) μ :=
+⋯
+theorem AnvBandit.hoeffding_dev.{u_1} : ∀ {Ω : Type u_1} [inst : MeasurableSpace.{u_1} Ω]
+  {μ : MeasureTheory.Measure.{u_1} Ω} [MeasureTheory.IsProbabilityMeasure.{u_1} μ] (X : ℕ → Ω → ℝ) (p : ℕ → ℝ)
+  (a b : ℝ),
+  (∀ (s : ℕ), AEMeasurable.{u_1, 0} (X s) μ) →
+    (∀ (s : ℕ), ∀ᵐ (ω : Ω) ∂μ, Membership.mem.{0, 0} (Set.Icc.{0} a b) (X s ω)) →
+      (∀ (s : ℕ), Eq.{1} (∫ (x : Ω), X s x ∂μ) (p s)) →
+        ProbabilityTheory.iIndepFun.{u_1, 0, 0} X μ →
+          ∀ (m : ℕ) {ε : ℝ},
+            LE.le.{0} 0 ε →
+              LE.le.{0}
+                (MeasureTheory.Measure.real.{u_1} μ (setOf.{u_1} fun ω => LE.le.{0} ε (AnvBandit.dev.{u_1} X p m ω)))
+                (Real.exp
+                  (HDiv.hDiv.{0, 0, 0} (Neg.neg.{0} (HPow.hPow.{0, 0, 0} ε 2))
+                    (HMul.hMul.{0, 0, 0} 2
+                      (HMul.hMul.{0, 0, 0} ↑m
+                        ↑(HPow.hPow.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} (nnnorm.{0} (HSub.hSub.{0, 0, 0} b a)) 2) 2))))) :=
+⋯
+theorem AnvBandit.measure_bad_le.{u_1} : ∀ {Ω : Type u_1} [inst : MeasurableSpace.{u_1} Ω]
+  {μ : MeasureTheory.Measure.{u_1} Ω} [MeasureTheory.IsProbabilityMeasure.{u_1} μ] (X : ℕ → Ω → ℝ) (p : ℕ → ℝ),
+  (∀ (s : ℕ), AEMeasurable.{u_1, 0} (X s) μ) →
+    (∀ (s : ℕ), ∀ᵐ (ω : Ω) ∂μ, Membership.mem.{0, 0} (Set.Icc.{0} 0 1) (X s ω)) →
+      (∀ (s : ℕ), Eq.{1} (∫ (x : Ω), X s x ∂μ) (p s)) →
+        ProbabilityTheory.iIndepFun.{u_1, 0, 0} X μ →
+          ∀ (m : ℕ),
+            LE.le.{0} 1 m →
+              ∀ {L : ℝ},
+                LE.le.{0} 0 L →
+                  LE.le.{0}
+                    (MeasureTheory.Measure.real.{u_1} μ
+                      (setOf.{u_1} fun ω =>
+                        LE.le.{0} (AnvBandit.rdelta L m)
+                          (HDiv.hDiv.{0, 0, 0} (abs.{0} (AnvBandit.dev.{u_1} X p m ω)) ↑m)))
+                    (HMul.hMul.{0, 0, 0} 2 (Real.exp (Neg.neg.{0} L))) :=
+⋯
+theorem AnvBandit.union_bound_arith : ∀ (n K T : ℕ) (δ L : ℝ),
+  Eq.{1} L
+      (Real.log (HDiv.hDiv.{0, 0, 0} (↑(HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} 2 n) K) T)) δ)) →
+    LT.lt.{0} 0 δ →
+      LT.lt.{0} 0 n →
+        LT.lt.{0} 0 K →
+          LT.lt.{0} 0 T →
+            LE.le.{0}
+              (HMul.hMul.{0, 0, 0} (↑(HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} n K) T))
+                (HMul.hMul.{0, 0, 0} 2 (Real.exp (Neg.neg.{0} L))))
+              δ :=
+⋯
+theorem AnvBandit.concentration_event.{u_1} : ∀ {Ω : Type u_1} [inst : MeasurableSpace.{u_1} Ω] {n K T : ℕ},
+  LE.le.{0} 2 n →
+    LE.le.{0} 2 K →
+      LE.le.{0} 1 T →
+        ∀ (μ : MeasureTheory.Measure.{u_1} Ω) [MeasureTheory.IsProbabilityMeasure.{u_1} μ]
+          (X : Fin n → Fin K → ℕ → Ω → ℝ) (p : Fin n → Fin K → ℕ → ℝ),
+          (∀ (i : Fin n) (k : Fin K) (s : ℕ), AEMeasurable.{u_1, 0} (X i k s) μ) →
+            (∀ (i : Fin n) (k : Fin K) (s : ℕ), ∀ᵐ (ω : Ω) ∂μ, Membership.mem.{0, 0} (Set.Icc.{0} 0 1) (X i k s ω)) →
+              (∀ (i : Fin n) (k : Fin K) (s : ℕ), Eq.{1} (∫ (x : Ω), X i k s x ∂μ) (p i k s)) →
+                (∀ (i : Fin n) (k : Fin K), ProbabilityTheory.iIndepFun.{u_1, 0, 0} (fun s => X i k s) μ) →
+                  ∀ (δ : ℝ),
+                    LT.lt.{0} 0 δ →
+                      LE.le.{0} δ 1 →
+                        LE.le.{0}
+                          (MeasureTheory.Measure.real.{u_1} μ
+                            (setOf.{u_1} fun ω =>
+                              ∃ i k m,
+                                LE.le.{0} 1 m ∧
+                                  LE.le.{0} m T ∧
+                                    LE.le.{0}
+                                      (AnvBandit.rdelta
+                                        (Real.log
+                                          (HDiv.hDiv.{0, 0, 0}
+                                            (↑(HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} 2 n) K) T))
+                                            δ))
+                                        m)
+                                      (HDiv.hDiv.{0, 0, 0} (abs.{0} (AnvBandit.dev.{u_1} (X i k) (p i k) m ω)) ↑m)))
+                          δ :=
+⋯
+theorem AnvBandit.DecayModel.theorem_4_1_explicit : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (T h : ℕ) (ξ β εP : ℝ)
+  (lam : Fin 2),
+  LE.le.{0} 1 T →
+    LE.le.{0} 0 ξ →
+      LT.lt.{0} 1 β →
+        LT.lt.{0} 0 εP →
+          ∀ (E R : ℝ),
+            LE.le.{0} E
+                (HAdd.hAdd.{0, 0, 0}
+                  (HAdd.hAdd.{0, 0, 0}
+                    (HMul.hMul.{0, 0, 0}
+                      (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.rhoMax lam)) (M.Abetaxi ξ β εP))
+                      (HAdd.hAdd.{0, 0, 0} (↑h) (HMul.hMul.{0, 0, 0} ξ (AnvBandit.LdeltaStar n K T))))
+                    (M.Dlam lam))
+                  (HMul.hMul.{0, 0, 0} (M.Jlam lam) (AnvBandit.LdeltaStar n K T))) →
+              LE.le.{0} R
+                  (AnvBandit.Uco (HMul.hMul.{0, 0, 0} ↑n ↑T) (M.Gamma lam)
+                    (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.rhoMax lam)) ↑T) E
+                    (HMul.hMul.{0, 0, 0} (AnvBandit.deltaStar T)
+                      (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.rhoMax lam)) ↑T))) →
+                LE.le.{0} R (AnvBandit.explicitBound M T h ξ β εP lam) :=
+⋯
+theorem AnvBandit.LdeltaStar_eq : ∀ (n K T : ℕ),
+  LT.lt.{0} 0 n →
+    LT.lt.{0} 0 K →
+      LT.lt.{0} 0 T →
+        Eq.{1} (AnvBandit.LdeltaStar n K T)
+          (HAdd.hAdd.{0, 0, 0}
+            (HAdd.hAdd.{0, 0, 0} (Real.log (HMul.hMul.{0, 0, 0} 2 (HMul.hMul.{0, 0, 0} ↑n ↑K))) (Real.log ↑T))
+            (HMul.hMul.{0, 0, 0} 2 (Real.log (HAdd.hAdd.{0, 0, 0} (↑T) 1)))) :=
+⋯
+theorem AnvBandit.DecayModel.deltaStar_mul_le : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (T : ℕ) (lam : Fin 2),
+  LE.le.{0} 1 T →
+    LE.le.{0}
+      (HMul.hMul.{0, 0, 0} (AnvBandit.deltaStar T) (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.rhoMax lam)) ↑T))
+      (HDiv.hDiv.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.rhoMax lam)) 4) :=
+⋯
+theorem AnvBandit.proposition_B_1 : ∀ {K : ℕ} (S D : Finset.{0} (Fin K)) (top o : Fin K),
+  Finset.Nonempty.{0} D →
+    LE.le.{0} (Finset.card.{0} D) 2 →
+      Finset.Nonempty.{0} (AnvBandit.updateD S D top o) ∧ LE.le.{0} (Finset.card.{0} (AnvBandit.updateD S D top o)) 2 :=
+⋯
+theorem AnvBandit.DecayModel.Jlam_nonneg : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K),
+  LE.le.{0} 1 n → LE.le.{0} 1 K → ∀ (lam : Fin 2), LE.le.{0} 0 (M.Jlam lam) :=
+⋯
+theorem AnvBandit.combine_timeorder_bounds : ∀ {β : ℝ},
+  LT.lt.{0} 1 β →
+    ∀ (R K : ℕ → ℕ → ℝ) (C0 C1 CK : ℝ),
+      LE.le.{0} 0 C0 →
+        LE.le.{0} 0 C1 →
+          LE.le.{0} 0 CK →
+            (∀ (T H : ℕ),
+                LE.le.{0} 1 T →
+                  LE.le.{0} 1 H →
+                    LE.le.{0} (R T H)
+                      (HAdd.hAdd.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} C0 (HMul.hMul.{0, 0, 0} C1 (K T H)))
+                        (HMul.hMul.{0, 0, 0} C1 (Real.log (HAdd.hAdd.{0, 0, 0} (↑T) 1))))) →
+              (∀ (T H : ℕ),
+                  LE.le.{0} 1 T →
+                    LE.le.{0} 1 H →
+                      LE.le.{0} (K T H)
+                        (HMul.hMul.{0, 0, 0} CK
+                          (HAdd.hAdd.{0, 0, 0} (↑H)
+                            (HDiv.hDiv.{0, 0, 0}
+                              (HPow.hPow.{0, 0, 0} (Real.log (HAdd.hAdd.{0, 0, 0} (↑T) 1))
+                                (HDiv.hDiv.{0, 0, 0} β (HSub.hSub.{0, 0, 0} β 1)))
+                              (HPow.hPow.{0, 0, 0} (↑H)
+                                (HSub.hSub.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} β (HSub.hSub.{0, 0, 0} β 1)) 1)))))) →
+                AnvBandit.TimeOrder β R :=
+⋯
+theorem AnvBandit.proposition_A_4 : ∀ (n : ℕ) {K : ℕ} (hK : LT.lt.{0} 0 K) (b a eta : Fin K → ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (a k)) →
+    (∀ (k : Fin K), LT.lt.{0} 0 (eta k)) →
+      ∀ (t : ℕ), Eq.{1} (AnvBandit.expBench n hK b a eta t) (AnvBandit.greedyVal n hK b a eta t) :=
+⋯
+theorem AnvBandit.expBench_le_greedyVal : ∀ (n : ℕ) {K : ℕ} (hK : LT.lt.{0} 0 K) (b a eta : Fin K → ℝ) (t : ℕ),
+  LE.le.{0} (AnvBandit.expBench n hK b a eta t) (AnvBandit.greedyVal n hK b a eta t) :=
+⋯
+theorem AnvBandit.greedyVal_le_expBench : ∀ (n : ℕ) {K : ℕ} (hK : LT.lt.{0} 0 K) (b a eta : Fin K → ℝ) (t : ℕ),
+  (∀ (k : Fin K), LE.le.{0} 0 (a k)) →
+    (∀ (k : Fin K), LT.lt.{0} 0 (eta k)) →
+      LE.le.{0} (AnvBandit.greedyVal n hK b a eta t) (AnvBandit.expBench n hK b a eta t) :=
+⋯
+theorem AnvBandit.exists_sched_with_counts : ∀ {K : ℕ} (q : Fin K → ℕ) (t : ℕ),
+  Eq.{1} (∑ k, q k) t → ∃ u, ∀ (k : Fin K), Eq.{1} (Finset.card.{0} {r | Eq.{1} (u r) k}) (q k) :=
+⋯
+theorem AnvBandit.syncExpVal_eq_sum : ∀ {K : ℕ} (n : ℕ) (b a eta : Fin K → ℝ) {t : ℕ} (u : Fin t → Fin K),
+  Eq.{1} (AnvBandit.syncExpVal n b a eta u)
+    (∑ k,
+      ∑ j ∈ Finset.range (Finset.card.{0} {r | Eq.{1} (u r) k}), AnvBandit.margVal n b a eta (Prod.mk.{0, 0} k j)) :=
+⋯
+theorem AnvBandit.occ_image_eq_range : ∀ {K t : ℕ} (u : Fin t → Fin K) (k : Fin K),
+  Eq.{1} (Finset.image.{0, 0} (AnvBandit.occ u) {r | Eq.{1} (u r) k})
+    (Finset.range (Finset.card.{0} {r | Eq.{1} (u r) k})) :=
+⋯
+theorem AnvBandit.measure_adaptive_sum_ge_le.{u_1} : ∀ {Ω : Type u_1} [inst : MeasurableSpace.{u_1} Ω]
+  (μ : MeasureTheory.Measure.{u_1} Ω) [inst_1 : MeasureTheory.IsProbabilityMeasure.{u_1} μ]
+  [inst_2 : StandardBorelSpace.{u_1} Ω] (ℱ : MeasureTheory.Filtration.{u_1, 0} ℕ inst) (D X : ℕ → Ω → ℝ) (muc : ℕ → ℝ),
+  (∀ (t : ℕ), MeasureTheory.StronglyMeasurable.{u_1, 0} (D t)) →
+    (∀ (t : ℕ), MeasureTheory.StronglyMeasurable.{u_1, 0} (X t)) →
+      ProbabilityTheory.HasSubgaussianMGF.{u_1}
+          (fun ω => HMul.hMul.{0, 0, 0} (D 0 ω) (HSub.hSub.{0, 0, 0} (X 0 ω) (muc 0))) (1 / 4) μ →
+        (∀ (t : ℕ),
+            ProbabilityTheory.HasCondSubgaussianMGF.{u_1} (↑ℱ (HSub.hSub.{0, 0, 0} t 1)) ⋯
+              (fun ω => HMul.hMul.{0, 0, 0} (D t ω) (HSub.hSub.{0, 0, 0} (X t ω) (muc t))) (1 / 4) μ) →
+          ∀ (m : ℕ) {ε : ℝ},
+            LE.le.{0} 0 ε →
+              LE.le.{0}
+                (MeasureTheory.Measure.real.{u_1} μ
+                  (setOf.{u_1} fun ω =>
+                    LE.le.{0} ε
+                      (∑ t ∈ Finset.range m, HMul.hMul.{0, 0, 0} (D t ω) (HSub.hSub.{0, 0, 0} (X t ω) (muc t)))))
+                (Real.exp
+                  (HDiv.hDiv.{0, 0, 0} (Neg.neg.{0} (HPow.hPow.{0, 0, 0} ε 2))
+                    (HMul.hMul.{0, 0, 0} 2 (HMul.hMul.{0, 0, 0} (↑m) (1 / 4))))) :=
+⋯
+theorem AnvBandit.measure_adaptive_abs_le.{u_1} : ∀ {Ω : Type u_1} [inst : MeasurableSpace.{u_1} Ω]
+  (μ : MeasureTheory.Measure.{u_1} Ω) [inst_1 : MeasureTheory.IsProbabilityMeasure.{u_1} μ]
+  [inst_2 : StandardBorelSpace.{u_1} Ω] (ℱ : MeasureTheory.Filtration.{u_1, 0} ℕ inst) (D X : ℕ → Ω → ℝ) (muc : ℕ → ℝ),
+  (∀ (t : ℕ), MeasureTheory.StronglyMeasurable.{u_1, 0} (D t)) →
+    (∀ (t : ℕ), MeasureTheory.StronglyMeasurable.{u_1, 0} (X t)) →
+      ProbabilityTheory.HasSubgaussianMGF.{u_1}
+          (fun ω => HMul.hMul.{0, 0, 0} (D 0 ω) (HSub.hSub.{0, 0, 0} (X 0 ω) (muc 0))) (1 / 4) μ →
+        ProbabilityTheory.HasSubgaussianMGF.{u_1}
+            (fun ω => Neg.neg.{0} (HMul.hMul.{0, 0, 0} (D 0 ω) (HSub.hSub.{0, 0, 0} (X 0 ω) (muc 0)))) (1 / 4) μ →
+          (∀ (t : ℕ),
+              ProbabilityTheory.HasCondSubgaussianMGF.{u_1} (↑ℱ (HSub.hSub.{0, 0, 0} t 1)) ⋯
+                (fun ω => HMul.hMul.{0, 0, 0} (D t ω) (HSub.hSub.{0, 0, 0} (X t ω) (muc t))) (1 / 4) μ) →
+            (∀ (t : ℕ),
+                ProbabilityTheory.HasCondSubgaussianMGF.{u_1} (↑ℱ (HSub.hSub.{0, 0, 0} t 1)) ⋯
+                  (fun ω => Neg.neg.{0} (HMul.hMul.{0, 0, 0} (D t ω) (HSub.hSub.{0, 0, 0} (X t ω) (muc t)))) (1 / 4)
+                  μ) →
+              ∀ (m : ℕ) {x : ℝ},
+                LE.le.{0} 0 x →
+                  LE.le.{0}
+                    (MeasureTheory.Measure.real.{u_1} μ
+                      (setOf.{u_1} fun ω =>
+                        LE.le.{0} (HMul.hMul.{0, 0, 0} (↑m) x)
+                          (abs.{0}
+                            (∑ t ∈ Finset.range m, HMul.hMul.{0, 0, 0} (D t ω) (HSub.hSub.{0, 0, 0} (X t ω) (muc t))))))
+                    (HMul.hMul.{0, 0, 0} 2
+                      (Real.exp
+                        (Neg.neg.{0} (HMul.hMul.{0, 0, 0} 2 (HMul.hMul.{0, 0, 0} (↑m) (HPow.hPow.{0, 0, 0} x 2)))))) :=
+⋯
+theorem AnvBandit.measure_adaptive_abs_le_sampled.{u_1} : ∀ {Ω : Type u_1} [inst : MeasurableSpace.{u_1} Ω]
+  (μ : MeasureTheory.Measure.{u_1} Ω) [inst_1 : MeasureTheory.IsProbabilityMeasure.{u_1} μ]
+  [inst_2 : StandardBorelSpace.{u_1} Ω] (ℱ : MeasureTheory.Filtration.{u_1, 0} ℕ inst) (D X : ℕ → Ω → ℝ) (muc : ℕ → ℝ),
+  (∀ (t : ℕ), MeasureTheory.StronglyMeasurable.{u_1, 0} (D t)) →
+    (∀ (t : ℕ), MeasureTheory.StronglyMeasurable.{u_1, 0} (X t)) →
+      ProbabilityTheory.HasSubgaussianMGF.{u_1}
+          (fun ω => HMul.hMul.{0, 0, 0} (D 0 ω) (HSub.hSub.{0, 0, 0} (X 0 ω) (muc 0))) (1 / 4) μ →
+        ProbabilityTheory.HasSubgaussianMGF.{u_1}
+            (fun ω => Neg.neg.{0} (HMul.hMul.{0, 0, 0} (D 0 ω) (HSub.hSub.{0, 0, 0} (X 0 ω) (muc 0)))) (1 / 4) μ →
+          (∀ (t : ℕ),
+              ProbabilityTheory.HasCondSubgaussianMGF.{u_1} (↑ℱ (HSub.hSub.{0, 0, 0} t 1)) ⋯
+                (fun ω => HMul.hMul.{0, 0, 0} (D t ω) (HSub.hSub.{0, 0, 0} (X t ω) (muc t))) (1 / 4) μ) →
+            (∀ (t : ℕ),
+                ProbabilityTheory.HasCondSubgaussianMGF.{u_1} (↑ℱ (HSub.hSub.{0, 0, 0} t 1)) ⋯
+                  (fun ω => Neg.neg.{0} (HMul.hMul.{0, 0, 0} (D t ω) (HSub.hSub.{0, 0, 0} (X t ω) (muc t)))) (1 / 4)
+                  μ) →
+              ∀ (m : ℕ) {x : ℝ},
+                LE.le.{0} 0 x →
+                  LE.le.{0}
+                    (MeasureTheory.Measure.real.{u_1} μ
+                      (setOf.{u_1} fun ω =>
+                        Eq.{1} (∑ t ∈ Finset.range m, D t ω) ↑m ∧
+                          LE.le.{0} (HMul.hMul.{0, 0, 0} (↑m) x)
+                            (abs.{0}
+                              (∑ t ∈ Finset.range m,
+                                HMul.hMul.{0, 0, 0} (D t ω) (HSub.hSub.{0, 0, 0} (X t ω) (muc t))))))
+                    (HMul.hMul.{0, 0, 0} 2
+                      (Real.exp
+                        (Neg.neg.{0} (HMul.hMul.{0, 0, 0} 2 (HMul.hMul.{0, 0, 0} (↑m) (HPow.hPow.{0, 0, 0} x 2)))))) :=
+⋯
+theorem AnvBandit.hasCondSubgaussianMGF_neg.{u_1} : ∀ {Ω : Type u_1} [MeasurableSpace.{u_1} Ω]
+  {m mΩ : MeasurableSpace.{u_1} Ω} {hm : LE.le.{u_1} m mΩ} [inst : StandardBorelSpace.{u_1} Ω]
+  {μ : MeasureTheory.Measure.{u_1} Ω} {X : Ω → ℝ} {c : NNReal} [inst_1 : MeasureTheory.IsFiniteMeasure.{u_1} μ],
+  ProbabilityTheory.HasCondSubgaussianMGF.{u_1} m hm X c μ →
+    ProbabilityTheory.HasCondSubgaussianMGF.{u_1} m hm (Neg.neg.{u_1} X) c μ :=
+⋯
+theorem AnvBandit.proposition_A_5_traj0 : ∀ {n K T : ℕ},
+  LE.le.{0} 1 T →
+    ∀ (M : AnvBandit.DecayModel n K) (u : Fin n → Fin T → Fin K),
+      LE.le.{0} (HSub.hSub.{0, 0, 0} (AnvBandit.Vstar0 M) (AnvBandit.J0 M u))
+        (HAdd.hAdd.{0, 0, 0} (M.Gamma 0)
+          (HMul.hMul.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} 1 (HDiv.hDiv.{0, 0, 0} (M.eps T 0) M.DeltaMin))
+            (∑ k ∈ M.others, HMul.hMul.{0, 0, 0} (M.gap k) ↑(AnvBandit.Mtot u k)))) :=
+⋯
+theorem AnvBandit.proposition_A_5_traj1 : ∀ {n K T : ℕ},
+  LE.le.{0} 1 T →
+    ∀ (M : AnvBandit.DecayModel n K) (u : Fin n → Fin T → Fin K),
+      LE.le.{0} (HSub.hSub.{0, 0, 0} (AnvBandit.Vstar1 M) (AnvBandit.J1 M u))
+        (HAdd.hAdd.{0, 0, 0} (M.Gamma 1)
+          (HMul.hMul.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} 1 (HDiv.hDiv.{0, 0, 0} (M.eps T 1) M.DeltaMin))
+            (∑ k ∈ M.others, HMul.hMul.{0, 0, 0} (M.gap k) ↑(AnvBandit.Mtot u k)))) :=
+⋯
+theorem AnvBandit.rho_sum_le : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (T : ℕ) (lam : Fin 2) (EMk : Fin K → ℝ),
+  (∀ (k : Fin K), Membership.mem.{0, 0} M.others k → LE.le.{0} 0 (EMk k)) →
+    LE.le.{0} (∑ k ∈ M.others, HMul.hMul.{0, 0, 0} (M.rho T lam k) (EMk k))
+      (HMul.hMul.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} 1 (HDiv.hDiv.{0, 0, 0} (M.eps T lam) M.DeltaMin))
+        (∑ k ∈ M.others, HMul.hMul.{0, 0, 0} (M.gap k) (EMk k))) :=
+⋯
+theorem AnvBandit.regret_conversion_lambda0 : ∀ {n K T : ℕ},
+  LE.le.{0} 1 T →
+    ∀ (M : AnvBandit.DecayModel n K) (u : Fin n → Fin T → Fin K),
+      LE.le.{0} (HSub.hSub.{0, 0, 0} (AnvBandit.Vstar0 M) (AnvBandit.J0 M u))
+        (HAdd.hAdd.{0, 0, 0} (M.Gamma 0) (∑ k ∈ M.others, HMul.hMul.{0, 0, 0} (M.rho T 0 k) ↑(AnvBandit.Mtot u k))) :=
+⋯
+theorem AnvBandit.regret_conversion_lambda1 : ∀ {n K T : ℕ},
+  LE.le.{0} 1 T →
+    ∀ (M : AnvBandit.DecayModel n K) (u : Fin n → Fin T → Fin K),
+      LE.le.{0} (HSub.hSub.{0, 0, 0} (AnvBandit.Vstar1 M) (AnvBandit.J1 M u))
+        (HAdd.hAdd.{0, 0, 0} (M.Gamma 1) (∑ k ∈ M.others, HMul.hMul.{0, 0, 0} (M.rho T 1 k) ↑(AnvBandit.Mtot u k))) :=
+⋯
+theorem AnvBandit.J0_eq_serial : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K) (u : Fin n → Fin T → Fin K),
+  Eq.{1} (AnvBandit.J0 M u) (∑ i, M.serialAlloc fun k => AnvBandit.Ntot u i k) :=
+⋯
+theorem AnvBandit.J1_eq_sync : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K) (u : Fin n → Fin T → Fin K),
+  Eq.{1} (AnvBandit.J1 M u) (M.syncAlloc fun k => AnvBandit.blist u k) :=
+⋯
+theorem AnvBandit.Vstar0_le : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K),
+  LE.le.{0} (AnvBandit.Vstar0 M) (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.Fk M.star T)) (M.Gamma 0)) :=
+⋯
+theorem AnvBandit.Vstar1_le : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K),
+  LE.le.{0} (AnvBandit.Vstar1 M)
+    (HAdd.hAdd.{0, 0, 0}
+      (HAdd.hAdd.{0, 0, 0}
+        (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} ↑n ↑T) (M.b M.star))
+          (AnvBandit.Phi (M.f M.star) (HMul.hMul.{0, 0, 0} n T)))
+        M.Db)
+      (HMul.hMul.{0, 0, 0} (↑(HSub.hSub.{0, 0, 0} n 1)) M.Aplus)) :=
+⋯
+theorem AnvBandit.dF_gt_point_one : LT.lt.{0} 0.1 (AnvBandit.dF 25 2048 300000) :=
+⋯
+theorem AnvBandit.Inform_eq_univ_of_increasing : ∀ {n : ℕ} (R : ℕ → Fin n → Fin n) {A : Finset.{0} (Fin n)},
+  Finset.Nonempty.{0} A →
+    (∀ (t : ℕ),
+        LT.lt.{0} t (HSub.hSub.{0, 0, 0} n 1) →
+          LT.lt.{0} (Finset.card.{0} (AnvBandit.Inform R A t))
+            (Finset.card.{0} (AnvBandit.Inform R A (HAdd.hAdd.{0, 0, 0} t 1)))) →
+      Eq.{1} (AnvBandit.Inform R A (HSub.hSub.{0, 0, 0} n 1)) Finset.univ.{0} :=
+⋯
+theorem AnvBandit.subset_Inform : ∀ {n : ℕ} (R : ℕ → Fin n → Fin n) (A : Finset.{0} (Fin n)) (t : ℕ),
+  A ⊆ AnvBandit.Inform R A t :=
+⋯
+theorem AnvBandit.Vstar1_le_Vser : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K),
+  LE.le.{0} (AnvBandit.Vstar1 M)
+    (HAdd.hAdd.{0, 0, 0} (AnvBandit.Vser M (HMul.hMul.{0, 0, 0} n T))
+      (HMul.hMul.{0, 0, 0} (↑(HSub.hSub.{0, 0, 0} n 1)) M.A)) :=
+⋯
+theorem AnvBandit.Vser_le_Fkstar_add_Db : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (u : ℕ),
+  LE.le.{0} (AnvBandit.Vser M u) (HAdd.hAdd.{0, 0, 0} (M.Fk M.star u) M.Db) :=
+⋯
+theorem AnvBandit.le_Vser : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) {u : ℕ} {m : Fin K → ℕ},
+  Eq.{1} (∑ k, m k) u → LE.le.{0} (M.serialAlloc m) (AnvBandit.Vser M u) :=
+⋯
+theorem AnvBandit.measure_tau_gt_le : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0) (m : ℕ),
+  LE.le.{0}
+    ((AnvBandit.procMeasure C (HSub.hSub.{0, 0, 0} n 1))
+      (setOf.{0} fun ω => LT.lt.{0} (HMul.hMul.{0, 0, 0} m (HSub.hSub.{0, 0, 0} n 1)) (AnvBandit.tau ⋯ ω i0)))
+    (ENNReal.ofReal (HPow.hPow.{0, 0, 0} (HSub.hSub.{0, 0, 0} 1 (AnvBandit.epsP C)) m)) :=
+⋯
+theorem AnvBandit.integral_rpow_tau_le : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0) {β : ℝ},
+  LE.le.{0} 1 β →
+    LE.le.{0}
+      (∫⁻ (ω : ℕ → Fin (HSub.hSub.{0, 0, 0} n 1) → Fin n → Fin n),
+        ENNReal.ofReal
+          (HPow.hPow.{0, 0, 0} (↑(AnvBandit.tau ⋯ ω i0)) β) ∂AnvBandit.procMeasure C (HSub.hSub.{0, 0, 0} n 1))
+      (ENNReal.ofReal
+        (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (Real.exp 1) (Real.Gamma (HAdd.hAdd.{0, 0, 0} β 1)))
+          (HPow.hPow.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} (HSub.hSub.{0, 0, 0} (↑n) 1) (AnvBandit.epsP C)) β))) :=
+⋯
+theorem AnvBandit.measure_complete_gt_le : ∀ {n : ℕ} (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0) (m : ℕ),
+  LE.le.{0}
+    ((AnvBandit.procMeasure C (HSub.hSub.{0, 0, 0} n 1))
+      (setOf.{0} fun ω => Ne.{1} (AnvBandit.StateProc ω (singleton.{0, 0} i0) m) Finset.univ.{0}))
+    (ENNReal.ofReal (HPow.hPow.{0, 0, 0} (HSub.hSub.{0, 0, 0} 1 (AnvBandit.epsP C)) m)) :=
+⋯
+theorem AnvBandit.measure_tau_gt_real_le : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0) {x : ℝ},
+  LE.le.{0} 0 x →
+    LE.le.{0}
+      ((AnvBandit.procMeasure C (HSub.hSub.{0, 0, 0} n 1)) (setOf.{0} fun ω => LT.lt.{0} x ↑(AnvBandit.tau ⋯ ω i0)))
+      (ENNReal.ofReal
+        (HMul.hMul.{0, 0, 0} (Real.exp 1)
+          (Real.exp
+            (Neg.neg.{0}
+              (HMul.hMul.{0, 0, 0} (AnvBandit.epsP C) (HDiv.hDiv.{0, 0, 0} x (HSub.hSub.{0, 0, 0} (↑n) 1))))))) :=
+⋯
+def AnvBandit.ReachData.ofIrreducible : {n : ℕ} →
+  {P : Fin n → Fin n → ℝ} → AnvBandit.IsIrreducible P → (i0 : Fin n) → AnvBandit.ReachData P i0 :=
+fun {n} {P} hP i0 =>
+  have hex := ⋯;
+  let rk := fun v => Nat.find ⋯;
+  have rk_spec := ⋯;
+  have rk_min := ⋯;
+  have hrank_i0 := ⋯;
+  have hrank_zero := ⋯;
+  have hparent := ⋯;
+  { rank := rk, rank_i0 := hrank_i0, rank_eq_zero := hrank_zero, rank_le := ⋯,
+    parent := fun v => if hv : Eq.{1} v i0 then i0 else Classical.choose.{1} ⋯, edge_pos := ⋯, parent_lt := ⋯ }
+theorem AnvBandit.gen_saturate : ∀ {n : ℕ} {P : Fin n → Fin n → ℝ} {i0 : Fin n},
+  AnvBandit.IsIrreducible P → Eq.{1} (AnvBandit.gen P i0 (HSub.hSub.{0, 0, 0} n 1)) Finset.univ.{0} :=
+⋯
+theorem AnvBandit.blockState_univ : ∀ {n d : ℕ} (w : Fin d → Fin n → Fin n) (A : Finset.{0} (Fin n)) (i0 : Fin n)
+  (rank : Fin n → ℕ) (parent : Fin n → Fin n),
+  Membership.mem.{0, 0} A i0 →
+    Eq.{1} (rank i0) 0 →
+      (∀ (v : Fin n), LE.le.{0} (rank v) d) →
+        (∀ (v : Fin n), Eq.{1} (rank v) 0 → Eq.{1} v i0) →
+          (∀ (v : Fin n), Ne.{1} v i0 → LT.lt.{0} (rank (parent v)) (rank v)) →
+            (∀ (t : Fin d) (v : Fin n), Eq.{1} (rank v) (HAdd.hAdd.{0, 0, 0} (↑t) 1) → Eq.{1} (w t v) (parent v)) →
+              Eq.{1} (AnvBandit.blockState w A d) Finset.univ.{0} :=
+⋯
+theorem AnvBandit.blockDist_blockEvent_ge : ∀ {n : ℕ} (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0),
+  LE.le.{0} (ENNReal.ofReal (AnvBandit.epsP C))
+    ((AnvBandit.blockDist C (HSub.hSub.{0, 0, 0} n 1)) (AnvBandit.blockEvent R.rank R.parent)) :=
+⋯
+theorem AnvBandit.Inform_unblock : ∀ {n d : ℕ} (hd : LT.lt.{0} 0 d) (ω : ℕ → Fin d → Fin n → Fin n)
+  (A : Finset.{0} (Fin n)) (m : ℕ),
+  Eq.{1} (AnvBandit.Inform (AnvBandit.unblock hd ω) A (HMul.hMul.{0, 0, 0} m d)) (AnvBandit.StateProc ω A m) :=
+⋯
+theorem AnvBandit.lemma_B_4 : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0) (β : ℝ),
+  LT.lt.{0} 1 β →
+    ∀ (m : ℕ),
+      LE.le.{0}
+          ((AnvBandit.procMeasure C (HSub.hSub.{0, 0, 0} n 1))
+            (setOf.{0} fun ω => LT.lt.{0} (HMul.hMul.{0, 0, 0} m (HSub.hSub.{0, 0, 0} n 1)) (AnvBandit.tau ⋯ ω i0)))
+          (ENNReal.ofReal (HPow.hPow.{0, 0, 0} (HSub.hSub.{0, 0, 0} 1 (AnvBandit.epsP C)) m)) ∧
+        LE.le.{0}
+          (∫⁻ (ω : ℕ → Fin (HSub.hSub.{0, 0, 0} n 1) → Fin n → Fin n),
+            ENNReal.ofReal
+              (HPow.hPow.{0, 0, 0} (↑(AnvBandit.tau ⋯ ω i0)) β) ∂AnvBandit.procMeasure C (HSub.hSub.{0, 0, 0} n 1))
+          (ENNReal.ofReal
+            (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (Real.exp 1) (Real.Gamma (HAdd.hAdd.{0, 0, 0} β 1)))
+              (HPow.hPow.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} (HSub.hSub.{0, 0, 0} (↑n) 1) (AnvBandit.epsP C)) β))) :=
+⋯
+theorem AnvBandit.measurable_tau_real : ∀ {n : ℕ} (hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)) (i0 : Fin n),
+  Measurable.{0, 0} fun ω => ↑(AnvBandit.tau hd ω i0) :=
+⋯
+theorem AnvBandit.EtauPow_le : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0) {β : ℝ},
+  LE.le.{0} 1 β →
+    LE.le.{0} (AnvBandit.EtauPow ⋯ C i0 β)
+      (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (Real.exp 1) (Real.Gamma (HAdd.hAdd.{0, 0, 0} β 1)))
+        (HPow.hPow.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} (HSub.hSub.{0, 0, 0} (↑n) 1) (AnvBandit.epsP C)) β)) :=
+⋯
+theorem AnvBandit.M1_le : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0),
+  LE.le.{0} (AnvBandit.M1 ⋯ C i0)
+    (HMul.hMul.{0, 0, 0} (↑n)
+      (HMul.hMul.{0, 0, 0} (Real.exp 1) (HDiv.hDiv.{0, 0, 0} (HSub.hSub.{0, 0, 0} (↑n) 1) (AnvBandit.epsP C)))) :=
+⋯
+theorem AnvBandit.DP_bounds : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0),
+  LE.le.{0} 0 (AnvBandit.DP ⋯ hn C i0) ∧
+    LE.le.{0} (AnvBandit.DP ⋯ hn C i0)
+      (HMul.hMul.{0, 0, 0} (↑n)
+        (HMul.hMul.{0, 0, 0} (Real.exp 1) (HDiv.hDiv.{0, 0, 0} (HSub.hSub.{0, 0, 0} (↑n) 1) (AnvBandit.epsP C)))) :=
+⋯
+theorem AnvBandit.Pbeta_le : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0) {H rH β : ℝ},
+  LE.le.{0} 0 H →
+    LE.le.{0} 0 rH →
+      LE.le.{0} 1 β →
+        LE.le.{0} (AnvBandit.Pbeta ⋯ C i0 H rH β)
+          (HMul.hMul.{0, 0, 0} H
+            (HAdd.hAdd.{0, 0, 0} 1
+              (HMul.hMul.{0, 0, 0} (HPow.hPow.{0, 0, 0} 2 (HSub.hSub.{0, 0, 0} β 1))
+                (HAdd.hAdd.{0, 0, 0} (HPow.hPow.{0, 0, 0} rH β)
+                  (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (Real.exp 1) (Real.Gamma (HAdd.hAdd.{0, 0, 0} β 1)))
+                    (HPow.hPow.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} (HSub.hSub.{0, 0, 0} (↑n) 1) (AnvBandit.epsP C))
+                      β)))))) :=
+⋯
+theorem AnvBandit.EminTS_le_Pbeta : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0) {H rH β T : ℝ},
+  LE.le.{0} 0 H →
+    LE.le.{0} 0 rH → LE.le.{0} 1 β → LE.le.{0} (AnvBandit.EminTS ⋯ C i0 H rH β T) (AnvBandit.Pbeta ⋯ C i0 H rH β) :=
+⋯
+theorem AnvBandit.Abeta_le : ∀ {n : ℕ} (hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)) (C : AnvBandit.ContactMatrix n)
+  (i0 : Fin n) {H rH β T : ℝ},
+  LE.le.{0} 0 T → LE.le.{0} (AnvBandit.Abeta hd C i0 H rH β T) (HMul.hMul.{0, 0, 0} (↑n) T) :=
+⋯
+theorem AnvBandit.lemma_B_5 : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0) {H rH β T : ℝ},
+  LE.le.{0} 0 H →
+    LE.le.{0} 0 rH →
+      LE.le.{0} 1 β →
+        LE.le.{0} (AnvBandit.EminTS ⋯ C i0 H rH β T)
+          (HMul.hMul.{0, 0, 0} H
+            (HAdd.hAdd.{0, 0, 0} 1
+              (HMul.hMul.{0, 0, 0} (HPow.hPow.{0, 0, 0} 2 (HSub.hSub.{0, 0, 0} β 1))
+                (HAdd.hAdd.{0, 0, 0} (HPow.hPow.{0, 0, 0} rH β)
+                  (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (Real.exp 1) (Real.Gamma (HAdd.hAdd.{0, 0, 0} β 1)))
+                    (HPow.hPow.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} (HSub.hSub.{0, 0, 0} (↑n) 1) (AnvBandit.epsP C))
+                      β)))))) :=
+⋯
+theorem AnvBandit.permSet_disjoint : ∀ {n K : ℕ},
+  LT.lt.{0} 0 n → ∀ (i j : Fin n), Ne.{1} i j → Disjoint.{0} (AnvBandit.permSet n K i) (AnvBandit.permSet n K j) :=
+⋯
+theorem AnvBandit.sum_permSet : ∀ {n K : ℕ},
+  LT.lt.{0} 0 n → ∀ (f : Fin K → ℝ), Eq.{1} (∑ i, ∑ k ∈ AnvBandit.permSet n K i, f k) (∑ k, f k) :=
+⋯
+theorem AnvBandit.sum_le_Wkappa : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} {c : Fin K → ℝ},
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    ∀ {L : ℝ} {F : Finset.{0} (Fin K)},
+      F ⊆ M.others →
+        LE.le.{0} (Finset.card.{0} F) (AnvBandit.kappa n K) → LE.le.{0} (∑ k ∈ F, M.wk c L k) (M.Wkappa c L) :=
+⋯
+theorem AnvBandit.GoodRun.pair_budget : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (R : AnvBandit.GoodRun M) (T : ℕ)
+  (i : Fin n) {k : Fin K},
+  Ne.{1} k M.star →
+    LE.le.{0}
+      (Finset.card.{0} ({t ∈ Finset.range T | Membership.mem.{0, 0} (R.active t i) M.star ∧ Eq.{1} (R.I t i) k}))
+      (M.mkAll R.L k) :=
+⋯
+theorem AnvBandit.GoodRun.N_lt_mk : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (R : AnvBandit.GoodRun M) {i : Fin n}
+  {k : Fin K},
+  Ne.{1} k M.star →
+    ∀ {t : ℕ},
+      Membership.mem.{0, 0} (R.active t i) M.star → Eq.{1} (R.I t i) k → LT.lt.{0} (R.N t i k) (M.mkAll R.L k) :=
+⋯
+theorem AnvBandit.terminal_budget : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K},
+  LT.lt.{0} 0 n →
+    ∀ (c : Fin K → ℝ) (L : ℝ),
+      (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+        Eq.{1} (c M.star) 0 →
+          ∀ (J : Finset.{0} (Fin n)) (D : Fin n → Finset.{0} (Fin K)) (i0 : Fin n),
+            Membership.mem.{0, 0} (AnvBandit.permSet n K i0) M.star →
+              (∀ (i : Fin n), Membership.mem.{0, 0} J i → Disjoint.{0} (AnvBandit.permSet n K i) (D i)) →
+                (∀ (i : Fin n), Membership.mem.{0, 0} J i → LE.le.{0} (Finset.card.{0} (D i)) 2) →
+                  (∀ (i : Fin n),
+                      Membership.mem.{0, 0} J i →
+                        Membership.mem.{0, 0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star) →
+                    (∀ (i : Fin n),
+                        Membership.mem.{0, 0} J i →
+                          LE.le.{0} (Finset.card.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)))
+                            (AnvBandit.smax n K)) →
+                      LE.le.{0}
+                        (∑ i ∈ J,
+                          ∑ k ∈ Finset.erase.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star, M.wk c L k)
+                        (M.Ccap c L) :=
+⋯
+theorem AnvBandit.lemma_C_1 : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (R : AnvBandit.GoodRun M),
+  LT.lt.{0} 0 n →
+    ∀ (c : Fin K → ℝ) (T Tstart : ℕ) (i0 : Fin n) (D : Fin n → Finset.{0} (Fin K)),
+      (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+        Eq.{1} (c M.star) 0 →
+          (∀ (t : ℕ) (i : Fin n),
+              LE.le.{0} Tstart t →
+                LT.lt.{0} t T → Eq.{1} (R.active t i) (Union.union.{0} (AnvBandit.permSet n K i) (D i))) →
+            Membership.mem.{0, 0} (AnvBandit.permSet n K i0) M.star →
+              (∀ (i : Fin n), Disjoint.{0} (AnvBandit.permSet n K i) (D i)) →
+                (∀ (i : Fin n), LE.le.{0} (Finset.card.{0} (D i)) 2) →
+                  (∀ (i : Fin n), Membership.mem.{0, 0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star) →
+                    (∀ (i : Fin n),
+                        LE.le.{0} (Finset.card.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)))
+                          (AnvBandit.smax n K)) →
+                      LE.le.{0} (∑ t ∈ Finset.range T with LE.le.{0} Tstart t, ∑ i, c (R.I t i)) (M.Clam c R.L 0 0) :=
+⋯
+theorem AnvBandit.lemma_C_1_count : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (R : AnvBandit.GoodRun M),
+  LT.lt.{0} 0 n →
+    ∀ (c : Fin K → ℝ) (T Tstart : ℕ) (i0 : Fin n) (D : Fin n → Finset.{0} (Fin K)),
+      (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+        Eq.{1} (c M.star) 0 →
+          (∀ (t : ℕ) (i : Fin n),
+              LE.le.{0} Tstart t →
+                LT.lt.{0} t T → Eq.{1} (R.active t i) (Union.union.{0} (AnvBandit.permSet n K i) (D i))) →
+            Membership.mem.{0, 0} (AnvBandit.permSet n K i0) M.star →
+              (∀ (i : Fin n), Disjoint.{0} (AnvBandit.permSet n K i) (D i)) →
+                (∀ (i : Fin n), LE.le.{0} (Finset.card.{0} (D i)) 2) →
+                  (∀ (i : Fin n), Membership.mem.{0, 0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star) →
+                    (∀ (i : Fin n),
+                        LE.le.{0} (Finset.card.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)))
+                          (AnvBandit.smax n K)) →
+                      LE.le.{0} (∑ t ∈ Finset.range T with LE.le.{0} Tstart t, ∑ i, c (R.I t i)) (M.Ccap c R.L) :=
+⋯
+theorem AnvBandit.GoodRun.AplusCount_le_mk : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (R : AnvBandit.GoodRun M)
+  (T : ℕ) (i : Fin n) {k : Fin K}, Ne.{1} k M.star → LE.le.{0} (R.AplusCount T i k) (M.mkAll R.L k) :=
+⋯
+theorem AnvBandit.batch_divergence_ge : ∀ {w : ℕ → ℝ},
+  Antitone.{0, 0} w →
+    ∀ (x c : ℕ → ℕ),
+      Eq.{1} (c 0) 0 →
+        (∀ (t : ℕ), Eq.{1} (c (HAdd.hAdd.{0, 0, 0} t 1)) (HAdd.hAdd.{0, 0, 0} (c t) (x t))) →
+          ∀ (T : ℕ),
+            LE.le.{0} (∑ s ∈ Finset.range (c T), w s) (∑ t ∈ Finset.range T, HMul.hMul.{0, 0, 0} (↑(x t)) (w (c t))) :=
+⋯
+theorem AnvBandit.batch_divergence_le : ∀ {n : ℕ} {w : ℕ → ℝ},
+  Antitone.{0, 0} w →
+    (∀ (s : ℕ), LE.le.{0} 0 (w s)) →
+      ∀ (x c : ℕ → ℕ),
+        Eq.{1} (c 0) 0 →
+          (∀ (t : ℕ), Eq.{1} (c (HAdd.hAdd.{0, 0, 0} t 1)) (HAdd.hAdd.{0, 0, 0} (c t) (x t))) →
+            (∀ (t : ℕ), LE.le.{0} (x t) n) →
+              ∀ (T : ℕ),
+                LE.le.{0} (∑ t ∈ Finset.range T, HMul.hMul.{0, 0, 0} (↑(x t)) (w (c t)))
+                  (HAdd.hAdd.{0, 0, 0} (∑ s ∈ Finset.range (c T), w s)
+                    (HMul.hMul.{0, 0, 0} (↑(HSub.hSub.{0, 0, 0} n 1)) (w 0))) :=
+⋯
+theorem AnvBandit.GoodRun.team_pos_budget : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (R : AnvBandit.GoodRun M) (T : ℕ)
+  {k : Fin K}, Ne.{1} k M.star → LE.le.{0} (∑ i, R.EikRound T i k) (M.Xi k) :=
+⋯
+theorem AnvBandit.node_selection_bound : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (R : AnvBandit.GoodRun M)
+  (q : Fin n → Fin K → ℕ → ℕ),
+  (∀ (i : Fin n) (k : Fin K) (s : ℕ),
+      LE.le.{0} 1 s → Eq.{1} (R.p i k s) (HAdd.hAdd.{0, 0, 0} (M.b k) (M.f k (q i k s)))) →
+    (∀ (i : Fin n) (k : Fin K) (s : ℕ), LE.le.{0} 1 s → LE.le.{0} s (q i k s)) →
+      LT.lt.{0} 0 R.L →
+        ∀ (T : ℕ) {i : Fin n} {k : Fin K},
+          Ne.{1} k M.star →
+            LE.le.{0} (↑(R.AplusCount T i k))
+              (HAdd.hAdd.{0, 0, 0} (↑(M.nkAll R.L k))
+                (HMul.hMul.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} 4 (M.gap k)) (R.EikPers q T i k))) :=
+⋯
+theorem AnvBandit.subset_selection_bound : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (R : AnvBandit.GoodRun M)
+  (q : Fin n → Fin K → ℕ → ℕ),
+  (∀ (i : Fin n) (k : Fin K) (s : ℕ),
+      LE.le.{0} 1 s → Eq.{1} (R.p i k s) (HAdd.hAdd.{0, 0, 0} (M.b k) (M.f k (q i k s)))) →
+    (∀ (i : Fin n) (k : Fin K) (s : ℕ), LE.le.{0} 1 s → LE.le.{0} s (q i k s)) →
+      (∀ (t : ℕ) (i : Fin n) (k : Fin K),
+          Eq.{1} (R.I t i) k →
+            Eq.{1} (q i k (HAdd.hAdd.{0, 0, 0} (R.N t i k) 1)) (HAdd.hAdd.{0, 0, 0} (R.teamCount t k) 1)) →
+        LT.lt.{0} 0 R.L →
+          ∀ (T : ℕ) {k : Fin K},
+            Ne.{1} k M.star →
+              ∀ (J : Finset.{0} (Fin n)),
+                LE.le.{0} (∑ i ∈ J, ↑(R.AplusCount T i k))
+                  (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} ↑(Finset.card.{0} J) ↑(M.nkAll R.L k))
+                    (HMul.hMul.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} 4 (M.gap k)) (M.Xi k))) :=
+⋯
+theorem AnvBandit.proposition_A_6 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (R : AnvBandit.GoodRun M)
+  (q : Fin n → Fin K → ℕ → ℕ),
+  (∀ (i : Fin n) (k : Fin K) (s : ℕ),
+      LE.le.{0} 1 s → Eq.{1} (R.p i k s) (HAdd.hAdd.{0, 0, 0} (M.b k) (M.f k (q i k s)))) →
+    (∀ (i : Fin n) (k : Fin K) (s : ℕ), LE.le.{0} 1 s → LE.le.{0} s (q i k s)) →
+      (∀ (t : ℕ) (i : Fin n) (k : Fin K),
+          Eq.{1} (R.I t i) k →
+            Eq.{1} (q i k (HAdd.hAdd.{0, 0, 0} (R.N t i k) 1)) (HAdd.hAdd.{0, 0, 0} (R.teamCount t k) 1)) →
+        LT.lt.{0} 0 R.L →
+          ∀ (T : ℕ) {k : Fin K},
+            Ne.{1} k M.star →
+              LE.le.{0} (∑ i, R.EikPers q T i k) (M.Xi k) ∧
+                (∀ (i : Fin n),
+                    LE.le.{0} (↑(R.AplusCount T i k))
+                      (HAdd.hAdd.{0, 0, 0} (↑(M.nkAll R.L k))
+                        (HMul.hMul.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} 4 (M.gap k)) (R.EikPers q T i k)))) ∧
+                  ∀ (J : Finset.{0} (Fin n)),
+                    LE.le.{0} (∑ i ∈ J, ↑(R.AplusCount T i k))
+                      (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} ↑(Finset.card.{0} J) ↑(M.nkAll R.L k))
+                        (HMul.hMul.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} 4 (M.gap k)) (M.Xi k))) :=
+⋯
+theorem AnvBandit.lemma_C_2_traj : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (R : AnvBandit.GoodRun M) (c : Fin K → ℝ)
+  (T : ℕ) (arr : Fin n → ℕ) (D : Fin n → Finset.{0} (Fin K)) (elim : Fin n → ℕ) (i0 : Fin n),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      Membership.mem.{0, 0} (AnvBandit.permSet n K i0) M.star →
+        (∀ (i : Fin n), Disjoint.{0} (AnvBandit.permSet n K i) (D i)) →
+          (∀ (i : Fin n), LE.le.{0} (Finset.card.{0} (D i)) 2) →
+            (∀ (i : Fin n), Membership.mem.{0, 0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star) →
+              (∀ (i : Fin n),
+                  LE.le.{0} (Finset.card.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i))) (AnvBandit.smax n K)) →
+                (∀ (t : ℕ) (i : Fin n),
+                    LE.le.{0} (arr i) t → LT.lt.{0} t T → Membership.mem.{0, 0} (R.active t i) M.star) →
+                  (∀ (i : Fin n),
+                      LE.le.{0}
+                        (Finset.card.{0}
+                          {k |
+                            k ∉ Union.union.{0} (AnvBandit.permSet n K i) (D i) ∧
+                              ∃ t, Membership.mem.{0, 0} (Finset.range T) t ∧ LE.le.{0} (arr i) t ∧ Eq.{1} (R.I t i) k})
+                        (elim i)) →
+                    LE.le.{0} (∑ t ∈ Finset.range T, ∑ i, c (R.I t i))
+                      (HAdd.hAdd.{0, 0, 0}
+                        (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (M.supOthers c) ↑(∑ i, min.{0} T (arr i)))
+                          (M.Ccap c R.L))
+                        (HMul.hMul.{0, 0, 0} (M.wmax c R.L) ↑(∑ i, elim i))) :=
+⋯
+theorem AnvBandit.lemma_C_2.{u_1} : ∀ {Ω : Type u_1} [inst : MeasurableSpace.{u_1} Ω]
+  (μ : MeasureTheory.Measure.{u_1} Ω) {n K : ℕ} (M : AnvBandit.DecayModel n K) (c : Fin K → ℝ) (L : ℝ) (T : ℕ)
+  (loss Arr El : Ω → ℝ) (Aβ DP : ℝ),
+  MeasureTheory.Integrable.{0, u_1} loss μ →
+    MeasureTheory.Integrable.{0, u_1}
+        (fun ω =>
+          HAdd.hAdd.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (M.supOthers c) (Arr ω)) (M.Ccap c L))
+            (HMul.hMul.{0, 0, 0} (M.wmax c L) (El ω)))
+        μ →
+      Eq.{1}
+          (∫ (ω : Ω),
+            HAdd.hAdd.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (M.supOthers c) (Arr ω)) (M.Ccap c L))
+              (HMul.hMul.{0, 0, 0} (M.wmax c L) (El ω)) ∂μ)
+          (HAdd.hAdd.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (M.supOthers c) Aβ) (M.Ccap c L))
+            (HMul.hMul.{0, 0, 0} (M.wmax c L) DP)) →
+        (∀ᵐ (ω : Ω) ∂μ,
+            LE.le.{0} (loss ω)
+              (HAdd.hAdd.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (M.supOthers c) (Arr ω)) (M.Ccap c L))
+                (HMul.hMul.{0, 0, 0} (M.wmax c L) (El ω)))) →
+          LE.le.{0} (∫ (ω : Ω), loss ω ∂μ)
+            (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (M.supOthers c) Aβ) (M.Clam c L DP 0)) :=
+⋯
+theorem AnvBandit.abel_bound : ∀ {d u : ℕ → ℝ},
+  Eq.{1} (d 0) 0 →
+    (∀ (ℓ : ℕ), LE.le.{0} 0 (d ℓ)) →
+      (∀ (ℓ : ℕ), LE.le.{0} 0 (u ℓ)) →
+        ∀ (Ph : ℕ),
+          LE.le.{0}
+            (∑ ℓ ∈ Finset.range Ph,
+              HMul.hMul.{0, 0, 0} (d (HAdd.hAdd.{0, 0, 0} ℓ 1))
+                (HSub.hSub.{0, 0, 0} (u (HAdd.hAdd.{0, 0, 0} ℓ 1)) (u (HAdd.hAdd.{0, 0, 0} ℓ 2))))
+            (∑ ℓ ∈ Finset.range Ph,
+              HMul.hMul.{0, 0, 0} (AnvBandit.posPart (HSub.hSub.{0, 0, 0} (d (HAdd.hAdd.{0, 0, 0} ℓ 1)) (d ℓ)))
+                (u (HAdd.hAdd.{0, 0, 0} ℓ 1))) :=
+⋯
+theorem AnvBandit.lemma_C_3 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (c : Fin K → ℝ) (L : ℝ) (lam : Fin 2) (Ph : ℕ)
+  (d u : ℕ → ℝ) (M1 Kbeta Eloss : ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    LE.le.{0} 0 M1 →
+      Eq.{1} (d 0) 0 →
+        (∀ (ℓ : ℕ), LE.le.{0} 0 (d ℓ)) →
+          (∀ (ℓ : ℕ), LE.le.{0} 0 (u ℓ)) →
+            LE.le.{0} Eloss
+                (HAdd.hAdd.{0, 0, 0} (M.Flam c L lam)
+                  (HMul.hMul.{0, 0, 0} (M.supOthers c)
+                    (HAdd.hAdd.{0, 0, 0}
+                      (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} 2 M1)
+                        (M.Flam (fun k => ite.{1} (Eq.{1} k M.star) 0 1) L lam))
+                      (∑ ℓ ∈ Finset.range Ph,
+                        HMul.hMul.{0, 0, 0} (d (HAdd.hAdd.{0, 0, 0} ℓ 1))
+                          (HSub.hSub.{0, 0, 0} (u (HAdd.hAdd.{0, 0, 0} ℓ 1)) (u (HAdd.hAdd.{0, 0, 0} ℓ 2))))))) →
+              LE.le.{0}
+                  (∑ ℓ ∈ Finset.range Ph,
+                    HMul.hMul.{0, 0, 0} (AnvBandit.posPart (HSub.hSub.{0, 0, 0} (d (HAdd.hAdd.{0, 0, 0} ℓ 1)) (d ℓ)))
+                      (u (HAdd.hAdd.{0, 0, 0} ℓ 1)))
+                  Kbeta →
+                LE.le.{0} Eloss
+                  (HAdd.hAdd.{0, 0, 0} (M.Flam c L lam)
+                    (HMul.hMul.{0, 0, 0} (M.supOthers c)
+                      (HAdd.hAdd.{0, 0, 0}
+                        (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} 2 M1)
+                          (M.Flam (fun k => ite.{1} (Eq.{1} k M.star) 0 1) L lam))
+                        Kbeta))) :=
+⋯
+theorem AnvBandit.topArg_max : ∀ {K : ℕ} (c : Fin K → ℝ) (S : Finset.{0} (Fin K)) (hS : Finset.Nonempty.{0} S)
+  {k : Fin K}, Membership.mem.{0, 0} S k → LE.le.{0} (c k) (c (AnvBandit.topArg c S hS)) :=
+⋯
+theorem AnvBandit.lemma_B_5_stable : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (Rm : AnvBandit.RunModel M) (j : ℕ)
+  (i : Fin n),
+  Membership.mem.{0, 0} (Rm.infSet j) i → Membership.mem.{0, 0} (Rm.Aph (HAdd.hAdd.{0, 0, 0} Rm.l0 j) i) M.star :=
+⋯
+theorem AnvBandit.lemma_B_5_all : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (Rm : AnvBandit.RunModel M) {τ : ℕ},
+  Eq.{1} (Rm.infSet τ) Finset.univ.{0} →
+    ∀ (i : Fin n), Membership.mem.{0, 0} (Rm.Aph (HAdd.hAdd.{0, 0, 0} Rm.l0 τ) i) M.star :=
+⋯
+theorem AnvBandit.Kbeta_summable : ∀ {w v : ℕ → ℝ} {A C ρ : ℝ},
+  LE.le.{0} 0 A →
+    LE.le.{0} 0 C →
+      (∀ (ℓ : ℕ), LE.le.{0} 0 (w ℓ)) →
+        (∀ (j : ℕ), LE.le.{0} 0 (v j)) →
+          LT.lt.{0} 0 ρ →
+            LT.lt.{0} ρ 1 →
+              ∀ (k : ℕ),
+                (∀ (ℓ : ℕ), LE.le.{0} (w ℓ) (HMul.hMul.{0, 0, 0} A (HPow.hPow.{0, 0, 0} (↑ℓ) k))) →
+                  (∀ (j : ℕ), LE.le.{0} (v j) (HMul.hMul.{0, 0, 0} C (HPow.hPow.{0, 0, 0} ρ j))) →
+                    ∀ (rH : ℕ),
+                      Summable.{0, 0} fun ℓ =>
+                        HMul.hMul.{0, 0, 0} (w (HAdd.hAdd.{0, 0, 0} ℓ 1)) (v (HSub.hSub.{0, 0, 0} ℓ rH)) :=
+⋯
+theorem AnvBandit.summable_shifted_pow_geometric : ∀ {ρ : ℝ},
+  LT.lt.{0} 0 ρ →
+    LT.lt.{0} ρ 1 →
+      ∀ (k : ℕ),
+        Summable.{0, 0} fun ℓ =>
+          HMul.hMul.{0, 0, 0} (HPow.hPow.{0, 0, 0} (↑(HAdd.hAdd.{0, 0, 0} ℓ 1)) k) (HPow.hPow.{0, 0, 0} ρ ℓ) :=
+⋯
+theorem AnvBandit.measure_Complete_compl_eq_zero : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n)
+  {i0 : Fin n} (R : AnvBandit.ReachData C.P i0),
+  Eq.{1} ((AnvBandit.procMeasure C (HSub.hSub.{0, 0, 0} n 1)) (setOf.{0} fun ω => ¬AnvBandit.Complete ⋯ ω i0)) 0 :=
+⋯
+theorem AnvBandit.measure_Complete_eq_one : ∀ {n : ℕ} (hn : LE.le.{0} 2 n) (C : AnvBandit.ContactMatrix n) {i0 : Fin n}
+  (R : AnvBandit.ReachData C.P i0),
+  Eq.{1} ((AnvBandit.procMeasure C (HSub.hSub.{0, 0, 0} n 1)) (setOf.{0} fun ω => AnvBandit.Complete ⋯ ω i0)) 1 :=
+⋯
+theorem AnvBandit.sigmaFrom_le_sigmaStep : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)}
+  {ω : ℕ → Fin (HSub.hSub.{0, 0, 0} n 1) → Fin n → Fin n} {A : Finset.{0} (Fin n)} {i0 i : Fin n},
+  Membership.mem.{0, 0} A i0 →
+    AnvBandit.Complete hd ω i0 →
+      LE.le.{0} (AnvBandit.sigmaFrom hd ω A i) (AnvBandit.sigmaStep (AnvBandit.unblock hd ω) i0 i) :=
+⋯
+theorem AnvBandit.min_sigmaFrom_anti : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)}
+  (ω : ℕ → Fin (HSub.hSub.{0, 0, 0} n 1) → Fin n → Fin n) {A B : Finset.{0} (Fin n)} {i0 : Fin n},
+  Membership.mem.{0, 0} A i0 →
+    A ⊆ B →
+      ∀ (i : Fin n),
+        LE.le.{0} (min.{0} (AnvBandit.sigmaFrom hd ω B i) (AnvBandit.tau hd ω i0))
+          (min.{0} (AnvBandit.sigmaFrom hd ω A i) (AnvBandit.tau hd ω i0)) :=
+⋯
+theorem AnvBandit.Vpot_singleton : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)}
+  (C : AnvBandit.ContactMatrix n) (i0 : Fin n),
+  Eq.{1} (AnvBandit.Vpot hd C i0 (singleton.{0, 0} i0)) (AnvBandit.M1 hd C i0) :=
+⋯
+theorem AnvBandit.Vpot_univ : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)} (C : AnvBandit.ContactMatrix n)
+  (i0 : Fin n), Eq.{1} (AnvBandit.Vpot hd C i0 Finset.univ.{0}) 0 :=
+⋯
+theorem AnvBandit.Vpot_le_M1 : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} (R : AnvBandit.ReachData C.P i0) {A : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 → LE.le.{0} (AnvBandit.Vpot hd C i0 A) (AnvBandit.M1 hd C i0) :=
+⋯
+theorem AnvBandit.Vpot_anti : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} (R : AnvBandit.ReachData C.P i0) {A B : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 → A ⊆ B → LE.le.{0} (AnvBandit.Vpot hd C i0 B) (AnvBandit.Vpot hd C i0 A) :=
+⋯
+theorem AnvBandit.card_sdiff_le_Vpot : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} (R : AnvBandit.ReachData C.P i0) {A : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 →
+        LE.le.{0} (↑(Finset.card.{0} (sdiff.{0} Finset.univ.{0} A))) (AnvBandit.Vpot hd C i0 A) :=
+⋯
+theorem AnvBandit.RunModel.holds_forever : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} (Rm : AnvBandit.RunModel M)
+  {l : ℕ},
+  LE.le.{0} Rm.l0 l →
+    (∀ (i : Fin n), Membership.mem.{0, 0} (Rm.Aph l i) M.star) →
+      ∀ (d : ℕ) (i : Fin n), Membership.mem.{0, 0} (Rm.Aph (HAdd.hAdd.{0, 0, 0} l d) i) M.star :=
+⋯
+theorem AnvBandit.infinitePiNat_map_headTail.{u_1} : ∀ {α : Type u_1} [inst : MeasurableSpace.{u_1} α]
+  (μ : MeasureTheory.Measure.{u_1} α) [MeasureTheory.IsProbabilityMeasure.{u_1} μ],
+  Eq.{u_1 + 1}
+    (MeasureTheory.Measure.map.{u_1, u_1} (fun ω => Prod.mk.{u_1, u_1} (ω 0) fun k => ω (HAdd.hAdd.{0, 0, 0} k 1))
+      (MeasureTheory.Measure.infinitePi.{0, u_1} fun x => μ))
+    (MeasureTheory.Measure.prod.{u_1, u_1} μ (MeasureTheory.Measure.infinitePi.{0, u_1} fun x => μ)) :=
+⋯
+theorem AnvBandit.stepMeasure_headTail : ∀ {n : ℕ} (C : AnvBandit.ContactMatrix n),
+  Eq.{1}
+    (MeasureTheory.Measure.map.{0, 0} (fun R => Prod.mk.{0, 0} (R 0) fun k => R (HAdd.hAdd.{0, 0, 0} k 1))
+      (AnvBandit.stepMeasure C))
+    (MeasureTheory.Measure.prod.{0, 0} (AnvBandit.stepDist C) (AnvBandit.stepMeasure C)) :=
+⋯
+theorem AnvBandit.unblock_measure : ∀ {n d : ℕ} (hd : LT.lt.{0} 0 d) (C : AnvBandit.ContactMatrix n),
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (AnvBandit.unblock hd) (AnvBandit.procMeasure C d))
+    (AnvBandit.stepMeasure C) :=
+⋯
+theorem AnvBandit.unblock_preimage : ∀ {n d : ℕ} (hd : LT.lt.{0} 0 d) (s : Finset.{0} ℕ)
+  (t : ℕ → Set.{0} (Fin n → Fin n)),
+  Eq.{1} (Set.preimage.{0, 0} (AnvBandit.unblock hd) (Set.pi.{0, 0} (↑s) t))
+    (Set.pi.{0, 0} ↑(Finset.image.{0, 0} (fun i => HDiv.hDiv.{0, 0, 0} i d) s) fun a =>
+      Set.pi.{0, 0}
+        ↑(Finset.image.{0, 0} (fun i => ⟨HMod.hMod.{0, 0, 0} i d, ⋯⟩) ({i ∈ s | Eq.{1} (HDiv.hDiv.{0, 0, 0} i d) a}))
+        fun b => t (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} a d) ↑b)) :=
+⋯
+theorem AnvBandit.prod_mod_fiber : ∀ {d : ℕ} (hd : LT.lt.{0} 0 d) (s : Finset.{0} ℕ) (f : ℕ → ENNReal),
+  Eq.{1}
+    (∏ a ∈ Finset.image.{0, 0} (fun i => HDiv.hDiv.{0, 0, 0} i d) s,
+      ∏ b ∈ Finset.image.{0, 0} (fun i => ⟨HMod.hMod.{0, 0, 0} i d, ⋯⟩) ({i ∈ s | Eq.{1} (HDiv.hDiv.{0, 0, 0} i d) a}),
+        f (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} a d) ↑b))
+    (∏ i ∈ s, f i) :=
+⋯
+theorem AnvBandit.pi_stepDist_pi : ∀ {n d : ℕ} (C : AnvBandit.ContactMatrix n) (Ba : Finset.{0} (Fin d))
+  (g : Fin d → Set.{0} (Fin n → Fin n)),
+  Eq.{1} ((MeasureTheory.Measure.pi.{0, 0} fun x => AnvBandit.stepDist C) (Set.pi.{0, 0} (↑Ba) g))
+    (∏ b ∈ Ba, (AnvBandit.stepDist C) (g b)) :=
+⋯
+theorem AnvBandit.stepMeasure_complete_compl_eq_zero : ∀ {n : ℕ},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} (R0 : AnvBandit.ReachData C.P i0),
+      Eq.{1} ((AnvBandit.stepMeasure C) (setOf.{0} fun R => ¬AnvBandit.CompleteStep R i0)) 0 :=
+⋯
+theorem AnvBandit.sigmaAll_stepE : ∀ {n : ℕ} {R : ℕ → Fin n → Fin n} {A : Finset.{0} (Fin n)} {i : Fin n},
+  i ∉ A →
+    Eq.{1} (AnvBandit.sigmaAllE R A i)
+      (HAdd.hAdd.{0, 0, 0} 1
+        (AnvBandit.sigmaAllE (fun t => R (HAdd.hAdd.{0, 0, 0} t 1)) (AnvBandit.infStep (R 0) A) i)) :=
+⋯
+theorem AnvBandit.sigmaAllE_of_nonempty : ∀ {n : ℕ} {R : ℕ → Fin n → Fin n} {A : Finset.{0} (Fin n)} {i : Fin n},
+  (∃ t, Membership.mem.{0, 0} (AnvBandit.Inform R A t) i) →
+    Eq.{1} (AnvBandit.sigmaAllE R A i) ↑(AnvBandit.sigmaAll R A i) :=
+⋯
+theorem AnvBandit.Nat.sInf_succ_shift : ∀ {P Q : ℕ → Prop},
+  (∀ (t : ℕ), P (HAdd.hAdd.{0, 0, 0} t 1) ↔ Q t) →
+    ¬P 0 →
+      (∃ t, P t) →
+        Eq.{1} (sInf.{0} (setOf.{0} fun t => P t)) (HAdd.hAdd.{0, 0, 0} 1 (sInf.{0} (setOf.{0} fun t => Q t))) :=
+⋯
+theorem AnvBandit.VpotE_recursion : ∀ {n : ℕ} (C : AnvBandit.ContactMatrix n) {A : Finset.{0} (Fin n)},
+  Eq.{1} (AnvBandit.VpotE C A)
+    (HAdd.hAdd.{0, 0, 0} (↑(Finset.card.{0} (sdiff.{0} Finset.univ.{0} A)))
+      (∫⁻ (J : Fin n → Fin n), AnvBandit.VpotE C (AnvBandit.infStep J A) ∂AnvBandit.stepDist C)) :=
+⋯
+theorem AnvBandit.DecayModel.hkappa_exact_le_coarse : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (L : ℝ),
+  LE.le.{0} (M.HKappa L) (M.HKappaUpper L) :=
+⋯
+theorem AnvBandit.DecayModel.sum_mk_le_hkappa : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) {L : ℝ}
+  {F : Finset.{0} (Fin K)},
+  F ⊆ M.others → LE.le.{0} (Finset.card.{0} F) (AnvBandit.kappa n K) → LE.le.{0} (∑ k ∈ F, M.mkAll L k) (M.HKappa L) :=
+⋯
+def AnvBandit.DecayModel.HKappa : {n K : ℕ} → AnvBandit.DecayModel n K → ℝ → ℕ :=
+fun {n K} M L =>
+  Finset.sup'.{0, 0} (Finset.powersetCard.{0} (AnvBandit.kappa n K) M.others) ⋯ fun F => ∑ k ∈ F, M.mkAll L k
+def AnvBandit.DecayModel.ofPositiveCurves : {n K : ℕ} →
+  (b : Fin K → ℝ) →
+    (f : Fin K → ℕ → ℝ) →
+      (star : Fin K) →
+        (∀ (k : Fin K), LT.lt.{0} 0 (b k)) →
+          (∀ (k : Fin K), LE.le.{0} (b k) 1) →
+            (∀ (k : Fin K) (s : ℕ), LE.le.{0} 1 s → LE.le.{0} 0 (f k s)) →
+              (∀ (k : Fin K) (s t : ℕ), LE.le.{0} 1 s → LE.le.{0} s t → LE.le.{0} (f k t) (f k s)) →
+                (∀ (k : Fin K), Filter.Tendsto.{0, 0} (f k) Filter.atTop.{0} (nhds.{0} 0)) →
+                  (∀ (k : Fin K) (s : ℕ), LE.le.{0} 1 s → LE.le.{0} (f k s) (HSub.hSub.{0, 0, 0} 1 (b k))) →
+                    (∀ (k : Fin K), LE.le.{0} (b k) (b star)) →
+                      (∀ (k : Fin K), Eq.{1} (b k) (b star) → Eq.{1} k star) →
+                        LE.le.{0} 2 n → LE.le.{0} 2 K → AnvBandit.DecayModel n K :=
+fun {n K} b f star b_pos b_le_one f_nonneg f_anti f_tendsto f_le_gap b_le_star star_unique two_le_n two_le_K =>
+  { b := b, f := fun k => AnvBandit.extendPositiveCurve (f k), star := star, b_pos := b_pos, b_le_one := b_le_one,
+    f_nonneg := ⋯, f_anti := ⋯, f_tendsto := ⋯, f_le_gap := ⋯, b_le_star := b_le_star, star_unique := star_unique,
+    two_le_n := two_le_n, two_le_K := two_le_K }
+theorem AnvBandit.extendPositiveCurve_antitone : ∀ {f : ℕ → ℝ},
+  (∀ (s t : ℕ), LE.le.{0} 1 s → LE.le.{0} s t → LE.le.{0} (f t) (f s)) →
+    Antitone.{0, 0} (AnvBandit.extendPositiveCurve f) :=
+⋯
+theorem AnvBandit.extendPositiveCurve_tendsto : ∀ {f : ℕ → ℝ},
+  Filter.Tendsto.{0, 0} f Filter.atTop.{0} (nhds.{0} 0) →
+    Filter.Tendsto.{0, 0} (AnvBandit.extendPositiveCurve f) Filter.atTop.{0} (nhds.{0} 0) :=
+⋯
+theorem AnvBandit.Ldelta_pos : ∀ {n K T : ℕ} {δ : ℝ},
+  LE.le.{0} 2 n →
+    LE.le.{0} 2 K → LE.le.{0} 1 T → LT.lt.{0} 0 δ → LT.lt.{0} δ 1 → LT.lt.{0} 0 (AnvBandit.Ldelta n K T δ) :=
+⋯
+theorem AnvBandit.legal_Hxi : ∀ {h : ℕ} {ξ L : ℝ},
+  LE.le.{0} 1 h →
+    LT.lt.{0} 0 ξ →
+      LT.lt.{0} 0 L →
+        LE.le.{0} 1 (AnvBandit.Hxi h ξ L) ∧
+          Dvd.dvd.{0} h (AnvBandit.Hxi h ξ L) ∧
+            LE.le.{0} (HMul.hMul.{0, 0, 0} ξ L) ↑(AnvBandit.Hxi h ξ L) ∧
+              LT.lt.{0} (↑(AnvBandit.Hxi h ξ L)) (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} ξ L) ↑h) :=
+⋯
+theorem AnvBandit.nonneg_subset_budget_iff_exact.{u_1} : ∀ {α : Type u_1} [DecidableEq.{u_1 + 1} α] (S : Finset.{u_1} α)
+  (r : ℕ),
+  LE.le.{0} r (Finset.card.{u_1} S) →
+    ∀ (w : α → ℝ),
+      (∀ (a : α), Membership.mem.{u_1, u_1} S a → LE.le.{0} 0 (w a)) →
+        ∀ (B : ℝ),
+          (∀ F ⊆ S, LE.le.{0} (Finset.card.{u_1} F) r → LE.le.{0} (∑ a ∈ F, w a) B) ↔
+            ∀ F ⊆ S, Eq.{1} (Finset.card.{u_1} F) r → LE.le.{0} (∑ a ∈ F, w a) B :=
+⋯
+theorem AnvBandit.rH_eq_last_short_phase : ∀ {H β B uH : ℝ},
+  LT.lt.{0} 0 H →
+    LT.lt.{0} 1 β →
+      LE.le.{0} 0 B →
+        Eq.{1} uH
+            (HPow.hPow.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} B H) 2) β)
+              (HDiv.hDiv.{0, 0, 0} 1 (HSub.hSub.{0, 0, 0} β 1))) →
+          Eq.{1} (AnvBandit.rH H β B uH) (AnvBandit.lastShortPhase H β B) :=
+⋯
+theorem AnvBandit.reliable_phase_exact_budget : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (L : ℝ) {H β : ℝ},
+  LT.lt.{0} 0 H →
+    LT.lt.{0} 1 β →
+      have B := ↑(M.Bschedule L);
+      have u :=
+        HPow.hPow.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} B H) 2) β)
+          (HDiv.hDiv.{0, 0, 0} 1 (HSub.hSub.{0, 0, 0} β 1));
+      Eq.{1} (AnvBandit.rH H β B u) (AnvBandit.lastShortPhase H β B) ∧
+        LE.le.{0} (AnvBandit.rH H β B u) (Nat.ceil.{0} u) ∧
+          ∀ (ℓ : ℕ), LT.lt.{0} (AnvBandit.rH H β B u) ℓ → LT.lt.{0} B (AnvBandit.dEll H β ℓ) :=
+⋯
+theorem AnvBandit.DecayModel.Bschedule_le_coarse : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (L : ℝ),
+  LE.le.{0} (M.Bschedule L) (HMul.hMul.{0, 0, 0} (HAdd.hAdd.{0, 0, 0} (AnvBandit.kappa n K) 1) (M.mMax L)) :=
+⋯
+theorem AnvBandit.ContactMatrix.ofStochasticIrreducible_pmin_attained : ∀ {n : ℕ} (hn : LT.lt.{0} 0 n)
+  (P : Fin n → Fin n → ℝ) (hP : ∀ (i j : Fin n), LE.le.{0} 0 (P i j)) (hrow : ∀ (i : Fin n), Eq.{1} (∑ j, P i j) 1)
+  (hirr : ∀ (a b : Fin n), Relation.ReflTransGen.{0} (fun x y => LT.lt.{0} 0 (P y x)) a b),
+  ∃ i j,
+    LT.lt.{0} 0 (P i j) ∧ Eq.{1} (AnvBandit.ContactMatrix.ofStochasticIrreducible hn P hP hrow hirr).pmin (P i j) :=
+⋯
+theorem AnvBandit.ObservedPrefix.measure_good_compl_le_finite.{u_1} : ∀ {Ω : Type u_1} [inst : MeasurableSpace.{u_1} Ω]
+  {n K T : ℕ} (μ : MeasureTheory.Measure.{u_1} Ω) [MeasureTheory.IsProbabilityMeasure.{u_1} μ]
+  (F : MeasureTheory.Filtration.{u_1, 0} ℕ inst) (selected : Fin n → Fin K → ℕ → Ω → Bool)
+  (X p : Fin n → Fin K → ℕ → Ω → ℝ),
+  LE.le.{0} 2 n →
+    LE.le.{0} 2 K →
+      LE.le.{0} 1 T →
+        (∀ (i : Fin n) (k : Fin K) (t : ℕ),
+            LT.lt.{0} t T → MeasurableSet.{u_1} (setOf.{u_1} fun ω => Eq.{1} (selected i k t ω) true)) →
+          (∀ (i : Fin n) (k : Fin K) (t : ℕ), LT.lt.{0} t T → MeasureTheory.StronglyMeasurable.{u_1, 0} (X i k t)) →
+            (∀ (i : Fin n) (k : Fin K) (t : ℕ), LT.lt.{0} t T → MeasureTheory.StronglyMeasurable.{u_1, 0} (p i k t)) →
+              (∀ (i : Fin n) (k : Fin K) (t : ℕ),
+                  LT.lt.{0} t T → ∀ (ω : Ω), Eq.{1} (X i k t ω) 0 ∨ Eq.{1} (X i k t ω) 1) →
+                (∀ (i : Fin n) (k : Fin K) (t : ℕ),
+                    LT.lt.{0} t T → ∀ (ω : Ω), Membership.mem.{0, 0} (Set.Icc.{0} 0 1) (p i k t ω)) →
+                  (∀ (i : Fin n) (k : Fin K) (t : ℕ),
+                      LT.lt.{0} t T → MeasureTheory.condExp.{u_1, 0} (↑F t) μ (X i k t) =ᵐ[μ] p i k t) →
+                    ∀ (δ : ℝ),
+                      LT.lt.{0} 0 δ →
+                        LE.le.{0} δ 1 →
+                          LE.le.{0}
+                            (MeasureTheory.Measure.real.{u_1} μ
+                              (compl.{u_1}
+                                (AnvBandit.ObservedPrefix.good.{u_1} selected X p T
+                                  (Real.log
+                                    (HDiv.hDiv.{0, 0, 0}
+                                      (↑(HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} 2 n) K) T))
+                                      δ)))))
+                            δ :=
+⋯
+structure AnvBandit.GoodRunOn {n K : ℕ} (M : AnvBandit.DecayModel n K) (T : ℕ) : Type
+number of parameters: 4
+fields:
+  AnvBandit.GoodRunOn.L : ℝ
+  AnvBandit.GoodRunOn.hL : LE.le.{0} 0 self.L
+  AnvBandit.GoodRunOn.I : ℕ → Fin n → Fin K
+  AnvBandit.GoodRunOn.bhat : Fin n → Fin K → ℕ → ℝ
+  AnvBandit.GoodRunOn.meanSum : Fin n → Fin K → ℕ → ℝ
+  AnvBandit.GoodRunOn.mean_bounds : ∀ (i : Fin n) (k : Fin K) (m : ℕ),
+      LE.le.{0} 1 m →
+        LE.le.{0} m (AnvBandit.pullCount self.I T i k) →
+          LE.le.{0} (M.b k) (HDiv.hDiv.{0, 0, 0} (self.meanSum i k m) ↑m) ∧
+            LE.le.{0} (HDiv.hDiv.{0, 0, 0} (self.meanSum i k m) ↑m)
+              (HAdd.hAdd.{0, 0, 0} (M.b k) (AnvBandit.psi (M.f k) m))
+  AnvBandit.GoodRunOn.hc : ∀ (i : Fin n) (k : Fin K) (m : ℕ),
+      LE.le.{0} 1 m →
+        LE.le.{0} m (AnvBandit.pullCount self.I T i k) →
+          LE.le.{0} (abs.{0} (HSub.hSub.{0, 0, 0} (self.bhat i k m) (HDiv.hDiv.{0, 0, 0} (self.meanSum i k m) ↑m)))
+            (AnvBandit.rdelta self.L m)
+  AnvBandit.GoodRunOn.active : ℕ → Fin n → Finset.{0} (Fin K)
+  AnvBandit.GoodRunOn.sel_mem : ∀ (t : ℕ),
+      LT.lt.{0} t T → ∀ (i : Fin n), Membership.mem.{0, 0} (self.active t i) (self.I t i)
+  AnvBandit.GoodRunOn.ucb : ∀ (t : ℕ),
+      LT.lt.{0} t T →
+        ∀ (i : Fin n),
+          Membership.mem.{0, 0} (self.active t i) M.star →
+            Eq.{1} (AnvBandit.pullCount self.I t i (self.I t i)) 0 ∨
+              LE.le.{0} 1 (AnvBandit.pullCount self.I t i (self.I t i)) ∧
+                LE.le.{0} 1 (AnvBandit.pullCount self.I t i M.star) ∧
+                  LE.le.{0}
+                    (HAdd.hAdd.{0, 0, 0} (self.bhat i M.star (AnvBandit.pullCount self.I t i M.star))
+                      (AnvBandit.rdelta self.L (AnvBandit.pullCount self.I t i M.star)))
+                    (HAdd.hAdd.{0, 0, 0} (self.bhat i (self.I t i) (AnvBandit.pullCount self.I t i (self.I t i)))
+                      (AnvBandit.rdelta self.L (AnvBandit.pullCount self.I t i (self.I t i))))
+constructor:
+  AnvBandit.GoodRunOn.mk {n K : ℕ} {M : AnvBandit.DecayModel n K} {T : ℕ} (L : ℝ) (hL : LE.le.{0} 0 L)
+    (I : ℕ → Fin n → Fin K) (bhat meanSum : Fin n → Fin K → ℕ → ℝ)
+    (mean_bounds :
+      ∀ (i : Fin n) (k : Fin K) (m : ℕ),
+        LE.le.{0} 1 m →
+          LE.le.{0} m (AnvBandit.pullCount I T i k) →
+            LE.le.{0} (M.b k) (HDiv.hDiv.{0, 0, 0} (meanSum i k m) ↑m) ∧
+              LE.le.{0} (HDiv.hDiv.{0, 0, 0} (meanSum i k m) ↑m)
+                (HAdd.hAdd.{0, 0, 0} (M.b k) (AnvBandit.psi (M.f k) m)))
+    (hc :
+      ∀ (i : Fin n) (k : Fin K) (m : ℕ),
+        LE.le.{0} 1 m →
+          LE.le.{0} m (AnvBandit.pullCount I T i k) →
+            LE.le.{0} (abs.{0} (HSub.hSub.{0, 0, 0} (bhat i k m) (HDiv.hDiv.{0, 0, 0} (meanSum i k m) ↑m)))
+              (AnvBandit.rdelta L m))
+    (active : ℕ → Fin n → Finset.{0} (Fin K))
+    (sel_mem : ∀ (t : ℕ), LT.lt.{0} t T → ∀ (i : Fin n), Membership.mem.{0, 0} (active t i) (I t i))
+    (ucb :
+      ∀ (t : ℕ),
+        LT.lt.{0} t T →
+          ∀ (i : Fin n),
+            Membership.mem.{0, 0} (active t i) M.star →
+              Eq.{1} (AnvBandit.pullCount I t i (I t i)) 0 ∨
+                LE.le.{0} 1 (AnvBandit.pullCount I t i (I t i)) ∧
+                  LE.le.{0} 1 (AnvBandit.pullCount I t i M.star) ∧
+                    LE.le.{0}
+                      (HAdd.hAdd.{0, 0, 0} (bhat i M.star (AnvBandit.pullCount I t i M.star))
+                        (AnvBandit.rdelta L (AnvBandit.pullCount I t i M.star)))
+                      (HAdd.hAdd.{0, 0, 0} (bhat i (I t i) (AnvBandit.pullCount I t i (I t i)))
+                        (AnvBandit.rdelta L (AnvBandit.pullCount I t i (I t i))))) :
+    AnvBandit.GoodRunOn M T
+theorem AnvBandit.Execution.run_congr : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K) (X X' : ℕ → Fin n → ℝ)
+  (J J' : ℕ → Fin n → Fin n) (t : ℕ),
+  (∀ (s : ℕ), LT.lt.{0} s t → Eq.{1} (X s) (X' s)) →
+    (∀ (ℓ : ℕ), LE.le.{0} (p.phaseEnd ℓ) t → LT.lt.{0} (p.phaseEnd ℓ) p.T → Eq.{1} (J ℓ) (J' ℓ)) →
+      Eq.{1} (AnvBandit.Execution.run p X J t) (AnvBandit.Execution.run p X' J' t) :=
+⋯
+theorem AnvBandit.GoodRunOn.global_wait_cost : ∀ {n K : ℕ} {M : AnvBandit.DecayModel n K} {T : ℕ}
+  (R : AnvBandit.GoodRunOn M T),
+  LT.lt.{0} 0 n →
+    ∀ (c : Fin K → ℝ) (cmax : ℝ) (S : ℕ) (i0 : Fin n) (D : Fin n → Finset.{0} (Fin K)),
+      (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+        Eq.{1} (c M.star) 0 →
+          (∀ (k : Fin K), LE.le.{0} (c k) cmax) →
+            (∀ (t : ℕ) (i : Fin n),
+                LE.le.{0} S t →
+                  LT.lt.{0} t T → Eq.{1} (R.active t i) (Union.union.{0} (AnvBandit.permSet n K i) (D i))) →
+              Membership.mem.{0, 0} (AnvBandit.permSet n K i0) M.star →
+                (∀ (i : Fin n), Disjoint.{0} (AnvBandit.permSet n K i) (D i)) →
+                  (∀ (i : Fin n), LE.le.{0} (Finset.card.{0} (D i)) 2) →
+                    (∀ (i : Fin n), Membership.mem.{0, 0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star) →
+                      (∀ (i : Fin n),
+                          LE.le.{0} (Finset.card.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)))
+                            (AnvBandit.smax n K)) →
+                        LE.le.{0} (∑ t ∈ Finset.range T, ∑ i, c (R.I t i))
+                          (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) ↑(min.{0} T S))
+                            (M.Ccap c R.L)) :=
+⋯
+def AnvBandit.IsExponential : {n K : ℕ} → AnvBandit.DecayModel n K → (Fin K → ℝ) → (Fin K → ℝ) → Prop :=
+fun {n K} M a eta =>
+  (∀ (k : Fin K), LE.le.{0} 0 (a k)) ∧
+    (∀ (k : Fin K), LT.lt.{0} 0 (eta k)) ∧
+      ∀ (k : Fin K) (s : ℕ),
+        LE.le.{0} 1 s →
+          Eq.{1} (M.f k s)
+            (HMul.hMul.{0, 0, 0} (a k)
+              (Real.exp (HMul.hMul.{0, 0, 0} (Neg.neg.{0} (eta k)) (HSub.hSub.{0, 0, 0} (↑s) 1))))
+theorem AnvBandit.ExponentialDP.proposition_A_4_full : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K) (a eta : Fin K → ℝ),
+  AnvBandit.IsExponential M a eta → Eq.{1} (AnvBandit.Vstar1 M) (AnvBandit.greedyVal n ⋯ M.b a eta T) :=
+⋯
+theorem AnvBandit.ExponentialDP.greedy_policy_attains : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K)
+  (a eta : Fin K → ℝ),
+  AnvBandit.IsExponential M a eta →
+    Eq.{1} (AnvBandit.Vstar1 M)
+      (AnvBandit.ExponentialDP.value M.b a eta 0
+        (List.map.{0, 0} AnvBandit.ExponentialDP.pure
+          (AnvBandit.Greedy.policy ⋯ (AnvBandit.ExponentialDP.stateMarg M.b a eta 0) T))) :=
+⋯
+theorem AnvBandit.Vstar0_eq_n_Vser : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K),
+  Eq.{1} (AnvBandit.Vstar0 M) (HMul.hMul.{0, 0, 0} (↑n) (AnvBandit.Vser M T)) :=
+⋯
+theorem AnvBandit.benchmark_public_sandwich : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K),
+  LE.le.{0} (AnvBandit.Vser M (HMul.hMul.{0, 0, 0} n T)) (AnvBandit.Vstar1 M) ∧
+    LE.le.{0} (AnvBandit.Vstar1 M)
+      (HAdd.hAdd.{0, 0, 0} (AnvBandit.Vser M (HMul.hMul.{0, 0, 0} n T))
+        (HMul.hMul.{0, 0, 0} (↑(HSub.hSub.{0, 0, 0} n 1)) M.A)) :=
+⋯
+theorem AnvBandit.Vser_eq_greedy_policy : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (t : ℕ),
+  Eq.{1} (AnvBandit.Vser M t)
+    (AnvBandit.Greedy.payoff (AnvBandit.serialMarg M) (AnvBandit.Greedy.policy ⋯ (AnvBandit.serialMarg M) t)) :=
+⋯
+theorem AnvBandit.PublicDP.W_eq_Vstar1 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (T : ℕ),
+  Eq.{1} (AnvBandit.PublicDP.W M T 0) (AnvBandit.Vstar1 M) :=
+⋯
+theorem AnvBandit.PublicDP.W_batch : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (r : ℕ) (m : Fin K → ℕ),
+  Eq.{1} (AnvBandit.PublicDP.W M (HAdd.hAdd.{0, 0, 0} r 1) m)
+    (Finset.sup'.{0, 0} (AnvBandit.comps K n) ⋯ fun x =>
+      HAdd.hAdd.{0, 0, 0} (∑ k, HMul.hMul.{0, 0, 0} (↑↑(x k)) (M.mean k (HAdd.hAdd.{0, 0, 0} 1 (m k))))
+        (AnvBandit.PublicDP.W M r (HAdd.hAdd.{0, 0, 0} m fun k => ↑(x k)))) :=
+⋯
+theorem AnvBandit.Vpot_recursion_of_irreducible : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} {A : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 →
+        Eq.{1} (AnvBandit.Vpot hd C i0 A)
+          (HAdd.hAdd.{0, 0, 0} (↑(Finset.card.{0} (sdiff.{0} Finset.univ.{0} A)))
+            (∫ (J : Fin n → Fin n), AnvBandit.Vpot hd C i0 (AnvBandit.infStep J A) ∂AnvBandit.stepDist C)) :=
+⋯
+theorem AnvBandit.GlobalRegret.goodLoss_global_paper : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ) (cmax : ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      (∀ (k : Fin K), LE.le.{0} (c k) cmax) →
+        LE.le.{0} (AnvBandit.GlobalRegret.goodLoss M p C lam c)
+          (HAdd.hAdd.{0, 0, 0}
+            (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax)
+              (min.{0} (↑p.T)
+                (AnvBandit.Pbeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                  (↑(AnvBandit.ActualPropagation.preparation M p)) p.β)))
+            (M.Clam c p.L 0 lam)) :=
+⋯
+theorem AnvBandit.ActualNodeExpectation.goodLoss_node : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      LE.le.{0} (AnvBandit.GlobalRegret.goodLoss M p C lam c)
+        (HAdd.hAdd.{0, 0, 0}
+          (HMul.hMul.{0, 0, 0} (M.supOthers c)
+            (AnvBandit.Abeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H)
+              (↑(AnvBandit.ActualPropagation.preparation M p)) p.β ↑p.T))
+          (M.Clam c p.L (AnvBandit.DP ⋯ ⋯ C (AnvBandit.Execution.holder p M.star)) lam)) :=
+⋯
+theorem AnvBandit.ActualPublicBudget.team_area_le : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (I : ℕ → Fin n → Fin K)
+  (T : ℕ) {k : Fin K}, Ne.{1} k M.star → LE.le.{0} (∑ i, AnvBandit.ActualPublicBudget.area M I T i k) (M.Xi k) :=
+⋯
+theorem AnvBandit.ActualPublicBudget.public_selection_core.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1}
+  (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K) (X : Ω → ℕ → Fin n → Bool)
+  (J : Ω → ℕ → Fin n → Fin n) (ω : Ω) (t : ℕ),
+  LT.lt.{0} t p.T →
+    ∀ (i : Fin n) (k : Fin K),
+      Membership.mem.{u_1, u_1}
+          (AnvBandit.ObservedPrefix.good.{u_1} (AnvBandit.ExecutionBounds.selected.{u_1} p X J)
+            (AnvBandit.ExecutionBounds.reward.{u_1} X) (AnvBandit.ExecutionBounds.mean.{u_1} M p 1 X J) t p.L)
+          ω →
+        Membership.mem.{0, 0}
+            ((AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t).nodes i).active M.star →
+          Eq.{1} (AnvBandit.Execution.I p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t i) k →
+            LE.le.{0} 1 (AnvBandit.Execution.N p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t i k) →
+              LE.le.{0}
+                (HMul.hMul.{0, 0, 0} (↑(AnvBandit.Execution.N p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t i k))
+                  (M.gap k))
+                (HAdd.hAdd.{0, 0, 0}
+                  (HAdd.hAdd.{0, 0, 0}
+                    (HMul.hMul.{0, 0, 0}
+                      (↑(AnvBandit.Execution.N p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t i k))
+                      (HDiv.hDiv.{0, 0, 0} (M.gap k) 2))
+                    (AnvBandit.ActualPublicBudget.area M
+                      (AnvBandit.Execution.I p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω)) t i k))
+                  (HMul.hMul.{0, 0, 0}
+                    (HMul.hMul.{0, 0, 0} 2
+                      ↑(AnvBandit.Execution.N p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t i k))
+                    (AnvBandit.rdelta p.L
+                      (AnvBandit.Execution.N p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t i k)))) :=
+⋯
+theorem AnvBandit.ActualPublicBudget.selected_times_bound.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1}
+  (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K) (X : Ω → ℕ → Fin n → Bool)
+  (J : Ω → ℕ → Fin n → Fin n) (ω : Ω) (i : Fin n) (k : Fin K),
+  Ne.{1} k M.star →
+    ∀ (S : Finset.{0} ℕ),
+      (∀ (t : ℕ),
+          Membership.mem.{0, 0} S t →
+            LT.lt.{0} t p.T ∧
+              Membership.mem.{0, 0}
+                  ((AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t).nodes i).active M.star ∧
+                Eq.{1} (AnvBandit.Execution.I p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t i) k ∧
+                  Membership.mem.{u_1, u_1}
+                    (AnvBandit.ObservedPrefix.good.{u_1} (AnvBandit.ExecutionBounds.selected.{u_1} p X J)
+                      (AnvBandit.ExecutionBounds.reward.{u_1} X) (AnvBandit.ExecutionBounds.mean.{u_1} M p 1 X J) t p.L)
+                    ω) →
+        LE.le.{0} (↑(Finset.card.{0} S))
+          (HAdd.hAdd.{0, 0, 0} (↑(M.nkAll p.L k))
+            (HMul.hMul.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} 4 (M.gap k))
+              (AnvBandit.ActualPublicBudget.area M
+                (AnvBandit.Execution.I p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω)) p.T i k))) :=
+⋯
+theorem AnvBandit.ActualPublicBudget.weighted_selected_pairs_bound.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1}
+  (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K) (X : Ω → ℕ → Fin n → Bool)
+  (J : Ω → ℕ → Fin n → Fin n) (ω : Ω) (c : Fin K → ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    ∀ (P : Finset.{0} (Prod.{0, 0} (Fin n) (Fin K))),
+      (∀ (z : Prod.{0, 0} (Fin n) (Fin K)), Membership.mem.{0, 0} P z → Ne.{1} z.2 M.star) →
+        ∀ (S : Fin n → Fin K → Finset.{0} ℕ),
+          (∀ (z : Prod.{0, 0} (Fin n) (Fin K)),
+              Membership.mem.{0, 0} P z →
+                ∀ (t : ℕ),
+                  Membership.mem.{0, 0} (S z.1 z.2) t →
+                    LT.lt.{0} t p.T ∧
+                      Membership.mem.{0, 0}
+                          ((AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t).nodes z.1).active
+                          M.star ∧
+                        Eq.{1} (AnvBandit.Execution.I p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t z.1) z.2 ∧
+                          Membership.mem.{u_1, u_1}
+                            (AnvBandit.ObservedPrefix.good.{u_1} (AnvBandit.ExecutionBounds.selected.{u_1} p X J)
+                              (AnvBandit.ExecutionBounds.reward.{u_1} X)
+                              (AnvBandit.ExecutionBounds.mean.{u_1} M p 1 X J) t p.L)
+                            ω) →
+            LE.le.{0} (∑ z ∈ P, HMul.hMul.{0, 0, 0} (c z.2) ↑(Finset.card.{0} (S z.1 z.2)))
+              (HAdd.hAdd.{0, 0, 0} (∑ z ∈ P, HMul.hMul.{0, 0, 0} (c z.2) ↑(M.nkAll p.L z.2)) (M.Bpub c)) :=
+⋯
+theorem AnvBandit.ActualPublicBudget.holding_cost_le_F1.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1}
+  (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K) (X : Ω → ℕ → Fin n → Bool)
+  (J : Ω → ℕ → Fin n → Fin n) (ω : Ω) (c : Fin K → ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Membership.mem.{u_1, u_1}
+        (AnvBandit.ObservedPrefix.good.{u_1} (AnvBandit.ExecutionBounds.selected.{u_1} p X J)
+          (AnvBandit.ExecutionBounds.reward.{u_1} X) (AnvBandit.ExecutionBounds.mean.{u_1} M p 1 X J) p.T p.L)
+        ω →
+      LE.le.{0}
+        (∑ i,
+          ∑ k ∈ M.others,
+            HMul.hMul.{0, 0, 0} (c k)
+              ↑(Finset.card.{0} (AnvBandit.ActualPublicBudget.holdingTimes M p (X ω) (J ω) i k)))
+        (M.Flam c p.L 1) :=
+⋯
+theorem AnvBandit.ActualPublicBudget.terminal_statistical_budget : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K),
+  LT.lt.{0} 0 n →
+    ∀ (c : Fin K → ℝ) (L : ℝ),
+      (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+        Eq.{1} (c M.star) 0 →
+          ∀ (U : Finset.{0} (Fin n)) (D : Fin n → Finset.{0} (Fin K)) (i0 : Fin n),
+            Membership.mem.{0, 0} (AnvBandit.permSet n K i0) M.star →
+              (∀ (i : Fin n), Membership.mem.{0, 0} U i → Disjoint.{0} (AnvBandit.permSet n K i) (D i)) →
+                (∀ (i : Fin n), Membership.mem.{0, 0} U i → LE.le.{0} (Finset.card.{0} (D i)) 2) →
+                  (∀ (i : Fin n),
+                      Membership.mem.{0, 0} U i →
+                        Membership.mem.{0, 0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star) →
+                    (∀ (i : Fin n),
+                        Membership.mem.{0, 0} U i →
+                          LE.le.{0} (Finset.card.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)))
+                            (AnvBandit.smax n K)) →
+                      LE.le.{0}
+                        (∑ i ∈ U,
+                          ∑ k ∈ Finset.erase.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star, M.wkN c L k)
+                        (M.CNcap c L) :=
+⋯
+theorem AnvBandit.ActualPublicBudget.terminal_public_selected_cost.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1}
+  (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K) (X : Ω → ℕ → Fin n → Bool)
+  (J : Ω → ℕ → Fin n → Fin n) (ω : Ω) (c : Fin K → ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      ∀ (U : Finset.{0} (Fin n)) (D : Fin n → Finset.{0} (Fin K)) (i0 : Fin n),
+        Membership.mem.{0, 0} (AnvBandit.permSet n K i0) M.star →
+          (∀ (i : Fin n), Membership.mem.{0, 0} U i → Disjoint.{0} (AnvBandit.permSet n K i) (D i)) →
+            (∀ (i : Fin n), Membership.mem.{0, 0} U i → LE.le.{0} (Finset.card.{0} (D i)) 2) →
+              (∀ (i : Fin n),
+                  Membership.mem.{0, 0} U i →
+                    Membership.mem.{0, 0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star) →
+                (∀ (i : Fin n),
+                    Membership.mem.{0, 0} U i →
+                      LE.le.{0} (Finset.card.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)))
+                        (AnvBandit.smax n K)) →
+                  ∀ (S : Fin n → Fin K → Finset.{0} ℕ),
+                    (∀ (i : Fin n),
+                        Membership.mem.{0, 0} U i →
+                          ∀ (k : Fin K),
+                            Membership.mem.{0, 0}
+                                (Finset.erase.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star) k →
+                              ∀ (t : ℕ),
+                                Membership.mem.{0, 0} (S i k) t →
+                                  LT.lt.{0} t p.T ∧
+                                    Membership.mem.{0, 0}
+                                        ((AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω)
+                                                t).nodes
+                                            i).active
+                                        M.star ∧
+                                      Eq.{1} (AnvBandit.Execution.I p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t i)
+                                          k ∧
+                                        Membership.mem.{u_1, u_1}
+                                          (AnvBandit.ObservedPrefix.good.{u_1}
+                                            (AnvBandit.ExecutionBounds.selected.{u_1} p X J)
+                                            (AnvBandit.ExecutionBounds.reward.{u_1} X)
+                                            (AnvBandit.ExecutionBounds.mean.{u_1} M p 1 X J) t p.L)
+                                          ω) →
+                      LE.le.{0}
+                        (∑ i ∈ U,
+                          ∑ k ∈ Finset.erase.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star,
+                            HMul.hMul.{0, 0, 0} (c k) ↑(Finset.card.{0} (S i k)))
+                        (HAdd.hAdd.{0, 0, 0} (M.CNcap c p.L) (M.Bpub c)) :=
+⋯
+theorem AnvBandit.ActualPublicBudget.terminal_lost_public_selected_cost.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1}
+  (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K) (X : Ω → ℕ → Fin n → Bool)
+  (J : Ω → ℕ → Fin n → Fin n) (ω : Ω) (c : Fin K → ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      ∀ (U : Finset.{0} (Fin n)) (D : Fin n → Finset.{0} (Fin K)) (i0 : Fin n),
+        Membership.mem.{0, 0} (AnvBandit.permSet n K i0) M.star →
+          (∀ (i : Fin n), Membership.mem.{0, 0} U i → Disjoint.{0} (AnvBandit.permSet n K i) (D i)) →
+            (∀ (i : Fin n), Membership.mem.{0, 0} U i → LE.le.{0} (Finset.card.{0} (D i)) 2) →
+              (∀ (i : Fin n),
+                  Membership.mem.{0, 0} U i →
+                    Membership.mem.{0, 0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star) →
+                (∀ (i : Fin n),
+                    Membership.mem.{0, 0} U i →
+                      LE.le.{0} (Finset.card.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)))
+                        (AnvBandit.smax n K)) →
+                  ∀ (Lost : Fin n → Finset.{0} (Fin K)) (elim : Fin n → ℕ),
+                    (∀ (i : Fin n), Membership.mem.{0, 0} U i → Lost i ⊆ M.others) →
+                      (∀ (i : Fin n),
+                          Membership.mem.{0, 0} U i →
+                            Disjoint.{0} (Finset.erase.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star)
+                              (Lost i)) →
+                        (∀ (i : Fin n), Membership.mem.{0, 0} U i → LE.le.{0} (Finset.card.{0} (Lost i)) (elim i)) →
+                          ∀ (S : Fin n → Fin K → Finset.{0} ℕ),
+                            (∀ (i : Fin n),
+                                Membership.mem.{0, 0} U i →
+                                  ∀ (k : Fin K),
+                                    Membership.mem.{0, 0}
+                                        (Union.union.{0}
+                                          (Finset.erase.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star)
+                                          (Lost i))
+                                        k →
+                                      ∀ (t : ℕ),
+                                        Membership.mem.{0, 0} (S i k) t →
+                                          LT.lt.{0} t p.T ∧
+                                            Membership.mem.{0, 0}
+                                                ((AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (X ω))
+                                                        (J ω) t).nodes
+                                                    i).active
+                                                M.star ∧
+                                              Eq.{1}
+                                                  (AnvBandit.Execution.I p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω)
+                                                    t i)
+                                                  k ∧
+                                                Membership.mem.{u_1, u_1}
+                                                  (AnvBandit.ObservedPrefix.good.{u_1}
+                                                    (AnvBandit.ExecutionBounds.selected.{u_1} p X J)
+                                                    (AnvBandit.ExecutionBounds.reward.{u_1} X)
+                                                    (AnvBandit.ExecutionBounds.mean.{u_1} M p 1 X J) t p.L)
+                                                  ω) →
+                              LE.le.{0}
+                                (∑ i ∈ U,
+                                  ∑
+                                    k ∈
+                                      Union.union.{0}
+                                        (Finset.erase.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star)
+                                        (Lost i),
+                                    HMul.hMul.{0, 0, 0} (c k) ↑(Finset.card.{0} (S i k)))
+                                (HAdd.hAdd.{0, 0, 0}
+                                  (HAdd.hAdd.{0, 0, 0} (M.CNcap c p.L)
+                                    (HMul.hMul.{0, 0, 0} (∑ i ∈ U, ↑(elim i)) (M.wNmax c p.L)))
+                                  (M.Bpub c)) :=
+⋯
+theorem AnvBandit.ActualPublicBudget.stable_tail_public_cost.{u_1} : ∀ {n K : ℕ} {Ω : Type u_1}
+  (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K) (X : Ω → ℕ → Fin n → Bool)
+  (J : Ω → ℕ → Fin n → Fin n) (ω : Ω) (c : Fin K → ℝ) (Tstart : ℕ) (i0 : Fin n) (D : Fin n → Finset.{0} (Fin K)),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      Membership.mem.{u_1, u_1}
+          (AnvBandit.ObservedPrefix.good.{u_1} (AnvBandit.ExecutionBounds.selected.{u_1} p X J)
+            (AnvBandit.ExecutionBounds.reward.{u_1} X) (AnvBandit.ExecutionBounds.mean.{u_1} M p 1 X J) p.T p.L)
+          ω →
+        (∀ (t : ℕ) (i : Fin n),
+            LE.le.{0} Tstart t →
+              LT.lt.{0} t p.T →
+                Eq.{1} ((AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t).nodes i).active
+                  (Union.union.{0} (AnvBandit.permSet n K i) (D i))) →
+          Membership.mem.{0, 0} (AnvBandit.permSet n K i0) M.star →
+            (∀ (i : Fin n), Disjoint.{0} (AnvBandit.permSet n K i) (D i)) →
+              (∀ (i : Fin n), LE.le.{0} (Finset.card.{0} (D i)) 2) →
+                (∀ (i : Fin n), Membership.mem.{0, 0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)) M.star) →
+                  (∀ (i : Fin n),
+                      LE.le.{0} (Finset.card.{0} (Union.union.{0} (AnvBandit.permSet n K i) (D i)))
+                        (AnvBandit.smax n K)) →
+                    LE.le.{0}
+                      (∑ t ∈ Finset.range p.T with LE.le.{0} Tstart t,
+                        ∑ i, c (AnvBandit.Execution.I p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) t i))
+                      (HAdd.hAdd.{0, 0, 0} (M.CNcap c p.L) (M.Bpub c)) :=
+⋯
+structure AnvBandit.BaselineExecution.LocalState (n K : ℕ) (i : Fin n) : Type
+number of parameters: 3
+fields:
+  AnvBandit.BaselineExecution.LocalState.seed : Fin K
+  AnvBandit.BaselineExecution.LocalState.N : Fin K → ℕ
+  AnvBandit.BaselineExecution.LocalState.Y : Fin K → ℝ
+constructor:
+  AnvBandit.BaselineExecution.LocalState.mk {n K : ℕ} {i : Fin n} (seed : Fin K) (N : Fin K → ℕ) (Y : Fin K → ℝ) :
+    AnvBandit.BaselineExecution.LocalState n K i
+structure AnvBandit.BaselineExecution.State (n K : ℕ) : Type
+number of parameters: 2
+fields:
+  AnvBandit.BaselineExecution.State.nodes : (i : Fin n) → AnvBandit.BaselineExecution.LocalState n K i
+constructor:
+  AnvBandit.BaselineExecution.State.mk {n K : ℕ} (nodes : (i : Fin n) → AnvBandit.BaselineExecution.LocalState n K i) :
+    AnvBandit.BaselineExecution.State n K
+def AnvBandit.BaselineExecution.LocalState.choose : {n K : ℕ} →
+  {i : Fin n} → AnvBandit.BaselineExecution.Params n K → AnvBandit.BaselineExecution.LocalState n K i → Fin K :=
+fun {n K} {i} p s =>
+  if h : Finset.Nonempty.{0} s.unseen then Finset.min'.{0} s.unseen h
+  else AnvBandit.topArg (AnvBandit.BaselineExecution.LocalState.index p s) s.active ⋯
+def AnvBandit.BaselineExecution.step : {n K : ℕ} →
+  AnvBandit.BaselineExecution.Params n K →
+    ℕ → AnvBandit.BaselineExecution.State n K → (Fin n → ℝ) → (Fin n → Fin n) → AnvBandit.BaselineExecution.State n K :=
+fun {n K} p t s x _j => ite.{1} (LT.lt.{0} t p.T) (AnvBandit.BaselineExecution.observe p s x) s
+def AnvBandit.BaselineLaw.stateMean : {n K : ℕ} →
+  AnvBandit.DecayModel n K →
+    AnvBandit.BaselineExecution.Params n K → Fin 2 → AnvBandit.BaselineExecution.State n K → Fin n → ℝ :=
+fun {n K} M p lam s i =>
+  have k := AnvBandit.BaselineExecution.actions p s i;
+  M.mean k (HAdd.hAdd.{0, 0, 0} 1 (ite.{1} (Eq.{1} lam 0) ((s.nodes i).N k) (∑ j, (s.nodes j).N k)))
+def AnvBandit.BaselineLaw.outcomeDistribution : {n K : ℕ} →
+  AnvBandit.DecayModel n K →
+    AnvBandit.BaselineExecution.Params n K →
+      Fin 2 → AnvBandit.BaselineExecution.State n K → PMF.{0} (AnvBandit.BaselineLaw.Outcome n) :=
+fun {n K} M p lam s =>
+  PMF.map.{0, 0} (fun x => Prod.mk.{0, 0} x id.{1}) (AnvBandit.BaselineLaw.rewardDistribution M p lam s)
+theorem AnvBandit.BaselineLaw.actual_good_compl_le : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2),
+  LE.le.{0}
+    (MeasureTheory.Measure.real.{0} (AnvBandit.BaselineLaw.executionMeasure M p lam)
+      (compl.{0} (AnvBandit.BaselineLaw.actualGoodEvent M p lam)))
+    p.δ :=
+⋯
+theorem AnvBandit.BaselineRegret.weightedLoss_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2) (c : Fin K → ℝ) (cmax : ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    (∀ (k : Fin K), LE.le.{0} (c k) cmax) →
+      Eq.{1} (c M.star) 0 →
+        LE.le.{0} (AnvBandit.BaselineRegret.weightedLoss M p lam c)
+          (min.{0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) ↑p.T)
+            (HAdd.hAdd.{0, 0, 0} (M.Flam c (AnvBandit.Execution.Params.L p) lam)
+              (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) ↑p.T)))) :=
+⋯
+theorem AnvBandit.BaselineTrajectory.teamRegret_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2),
+  LE.le.{0} (AnvBandit.BaselineTrajectory.teamRegret M p lam)
+    (AnvBandit.Uind (HMul.hMul.{0, 0, 0} ↑n ↑p.T) (M.Gamma lam)
+      (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T)
+      (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam)
+      (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T))) :=
+⋯
+theorem AnvBandit.BaselineObserved.original_teamRegret_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.BaselineLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.BaselineLaw.executionMeasure M p lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.BaselineLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T → ∀ᵐ (ω : AnvBandit.BaselineLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+        LE.le.{0} (AnvBandit.BaselineObserved.originalTeamRegret M p lam ν)
+          (AnvBandit.Uind (HMul.hMul.{0, 0, 0} ↑n ↑p.T) (M.Gamma lam)
+            (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T)
+            (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam)
+            (HMul.hMul.{0, 0, 0} p.δ
+              (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) (M.supOthers (M.rho p.T lam))) ↑p.T))) :=
+⋯
+theorem AnvBandit.BaselineExecution.contacts_ignored : ∀ {n K : ℕ} (p : AnvBandit.BaselineExecution.Params n K)
+  (X : ℕ → Fin n → ℝ) (J J' : ℕ → Fin n → Fin n) (t : ℕ),
+  Eq.{1} (AnvBandit.BaselineExecution.run p X J t) (AnvBandit.BaselineExecution.run p X J' t) :=
+⋯
+theorem AnvBandit.BaselineExecution.action_local_information : ∀ {n K : ℕ} (p : AnvBandit.BaselineExecution.Params n K)
+  (X X' : ℕ → Fin n → ℝ) (J J' : ℕ → Fin n → Fin n) (t : ℕ) (i : Fin n),
+  (∀ (s : ℕ), LT.lt.{0} s t → Eq.{1} (X s i) (X' s i)) →
+    Eq.{1} (AnvBandit.BaselineExecution.I p X J t i) (AnvBandit.BaselineExecution.I p X' J' t i) :=
+⋯
+theorem AnvBandit.BaselineLaw.conditional_reward_law : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2) (t : ℕ),
+  ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) (Preorder.frestrictLe.{0, 0} t)
+        (AnvBandit.BaselineLaw.executionMeasure M p
+          lam)) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t)
+      (AnvBandit.BaselineLaw.executionMeasure M p lam)]
+    ⇑(AnvBandit.BaselineLaw.rewardKernel M p lam t) :=
+⋯
+theorem AnvBandit.BaselineLaw.canonical_original_law : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2),
+  (∀ (t : ℕ),
+      LT.lt.{0} t p.T →
+        ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+              (Preorder.frestrictLe.{0, 0} t)
+              (AnvBandit.BaselineLaw.executionMeasure M p
+                lam)) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t)
+            (AnvBandit.BaselineLaw.executionMeasure M p lam)]
+          ⇑(AnvBandit.BaselineLaw.rewardKernel M p lam t)) ∧
+    ∀ (t : ℕ),
+      LT.lt.{0} t p.T →
+        ∀ᵐ (ω : AnvBandit.BaselineLaw.Path n) ∂AnvBandit.BaselineLaw.executionMeasure M p lam,
+          Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1} :=
+⋯
+theorem AnvBandit.lintegral_VpotE_inform : ∀ {n : ℕ} (C : AnvBandit.ContactMatrix n) (A : Finset.{0} (Fin n)) (j : ℕ),
+  Eq.{1} (∫⁻ (R : ℕ → Fin n → Fin n), AnvBandit.VpotE C (AnvBandit.Inform R A j) ∂AnvBandit.stepMeasure C)
+    (∑ i, ∫⁻ (R : ℕ → Fin n → Fin n), HSub.hSub.{0, 0, 0} (AnvBandit.sigmaAllE R A i) ↑j ∂AnvBandit.stepMeasure C) :=
+⋯
+theorem AnvBandit.integrable_Vpot_inform : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) (i0 : Fin n) (j : ℕ),
+      MeasureTheory.Integrable.{0, 0} (fun R => AnvBandit.Vpot hd C i0 (AnvBandit.Inform R (singleton.{0, 0} i0) j))
+        (AnvBandit.stepMeasure C) :=
+⋯
+theorem AnvBandit.remainingV_zero : ∀ {n : ℕ} (hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1))
+  (C : AnvBandit.ContactMatrix n) (i0 : Fin n), Eq.{1} (AnvBandit.remainingV hd C i0 0) (AnvBandit.M1 hd C i0) :=
+⋯
+theorem AnvBandit.remainingV_le_completion_tail : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) (i0 : Fin n) (j : ℕ),
+      LE.le.{0} (AnvBandit.remainingV hd C i0 j)
+        (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (AnvBandit.M1 hd C i0) (Real.exp 1))
+          (Real.exp
+            (Neg.neg.{0}
+              (HMul.hMul.{0, 0, 0} (AnvBandit.epsP C) (HDiv.hDiv.{0, 0, 0} (↑j) (HSub.hSub.{0, 0, 0} (↑n) 1)))))) :=
+⋯
+theorem AnvBandit.scheduleOmega_le_polynomial : ∀ {H β : ℝ},
+  LE.le.{0} 0 H →
+    LT.lt.{0} 1 β →
+      ∀ (ℓ : ℕ),
+        LE.le.{0} (AnvBandit.scheduleOmega H β ℓ)
+          (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} 2 H) (HPow.hPow.{0, 0, 0} (↑ℓ) (Nat.ceil.{0} β))) :=
+⋯
+theorem AnvBandit.ExecutionLaw.actual_good_compl_le : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  LE.le.{0}
+    (MeasureTheory.Measure.real.{0} (AnvBandit.ExecutionLaw.executionMeasure M p C lam)
+      (compl.{0} (AnvBandit.ExecutionLaw.actualGoodEvent M p lam)))
+    p.δ :=
+⋯
+def AnvBandit.ExecutionLaw.actualGoodRun : {n K : ℕ} →
+  (M : AnvBandit.DecayModel n K) →
+    (p : AnvBandit.Execution.Params n K) →
+      (lam : Fin 2) →
+        (ω : AnvBandit.ExecutionLaw.Path n) →
+          Membership.mem.{0, 0} (AnvBandit.ExecutionLaw.actualGoodEvent M p lam) ω → AnvBandit.GoodRunOn M p.T :=
+fun {n K} M p lam ω hω =>
+  AnvBandit.ExecutionBounds.goodRunOn.{0} M p lam AnvBandit.ExecutionLaw.pathRewards
+    (AnvBandit.ExecutionLaw.pathContacts p) ω hω
+theorem AnvBandit.ExecutionLaw.executionMeasure_probability : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  MeasureTheory.IsProbabilityMeasure.{0} (AnvBandit.ExecutionLaw.executionMeasure M p C lam) :=
+⋯
+theorem AnvBandit.ExecutionLaw.conditional_reward_mean : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (t : ℕ) (i : Fin n),
+  (MeasureTheory.condExp.{0, 0} (↑(AnvBandit.ExecutionLaw.executionFiltration n) t)
+      (AnvBandit.ExecutionLaw.executionMeasure M p C lam) fun ω =>
+      AnvBandit.ExecutionLaw.rewardReal
+        (AnvBandit.ExecutionLaw.pathRewards ω t i)) =ᵐ[AnvBandit.ExecutionLaw.executionMeasure M p C lam]
+    fun ω =>
+    AnvBandit.ExecutionLaw.actualMean M p lam (AnvBandit.ExecutionLaw.pathRewards ω)
+      (AnvBandit.ExecutionLaw.pathContacts p ω) t i :=
+⋯
+theorem AnvBandit.ExecutionLaw.contact_step_conditional_law : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (t : ℕ),
+  ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+        (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+        (AnvBandit.ExecutionLaw.executionMeasure M p C
+          lam)) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+      (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+      (AnvBandit.ExecutionLaw.executionMeasure M p C lam)]
+    ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+        (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C))) :=
+⋯
+theorem AnvBandit.ExecutionLaw.conditional_reward_law : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (t : ℕ),
+  ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) (Preorder.frestrictLe.{0, 0} t)
+        (AnvBandit.ExecutionLaw.executionMeasure M p C
+          lam)) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t)
+      (AnvBandit.ExecutionLaw.executionMeasure M p C lam)]
+    ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t) :=
+⋯
+theorem AnvBandit.ExecutionLaw.actualGoodEvent_measurable : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2),
+  MeasurableSet.{0} (AnvBandit.ExecutionLaw.actualGoodEvent M p lam) :=
+⋯
+theorem AnvBandit.ExecutionLaw.replay_eq_run : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K)
+  (ω : ℕ → AnvBandit.ExecutionLaw.Outcome n) (t : ℕ),
+  Eq.{1} (AnvBandit.ExecutionLaw.replay p (List.ofFn.{0} fun i => ω (HAdd.hAdd.{0, 0, 0} (↑i) 1))).2
+    (AnvBandit.Execution.run p (fun r i => AnvBandit.ExecutionLaw.rewardReal ((ω (HAdd.hAdd.{0, 0, 0} r 1)).1 i))
+      (fun ℓ => (ω (p.phaseEnd ℓ)).2) t) :=
+⋯
+theorem AnvBandit.ExecutionLaw.actual_contact_stream_law : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (offset : ℕ),
+  Eq.{1}
+    (MeasureTheory.Measure.map.{0, 0} (AnvBandit.ExecutionLaw.phaseContactStream p offset)
+      (AnvBandit.ExecutionLaw.executionMeasure M p C lam))
+    (AnvBandit.stepMeasure C) :=
+⋯
+theorem AnvBandit.ExecutionLaw.contactDistribution_toMeasure : ∀ {n : ℕ} (C : AnvBandit.ContactMatrix n),
+  Eq.{1} (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)) (AnvBandit.stepDist C) :=
+⋯
+theorem AnvBandit.ExecutionLaw.retainedContact_iff_communicates : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K)
+  (ω : AnvBandit.ExecutionLaw.Path n) (t : ℕ),
+  LT.lt.{0} t p.T →
+    (AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) ↔
+      AnvBandit.Execution.communicates p t
+        (AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+          (AnvBandit.ExecutionLaw.pathContacts p ω) t)) :=
+⋯
+theorem AnvBandit.ExecutionLaw.observedPath_run : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K)
+  (ω : AnvBandit.ExecutionLaw.Path n) (t : ℕ),
+  Eq.{1}
+    (AnvBandit.Execution.run p
+      (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards (AnvBandit.ExecutionLaw.observedPath p ω)))
+      (AnvBandit.ExecutionLaw.pathContacts p (AnvBandit.ExecutionLaw.observedPath p ω)) t)
+    (AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+      (AnvBandit.ExecutionLaw.pathContacts p ω) t) :=
+⋯
+theorem AnvBandit.ExecutionLaw.observed_transition_of_original : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν]
+  (t : ℕ),
+  ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) (Preorder.frestrictLe.{0, 0} t)
+          ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+      ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t) →
+    (AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+        ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+              (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+              ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+            (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+          ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+              (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+      (¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+          ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+        ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => ω (HAdd.hAdd.{0, 0, 0} t 1)) (Preorder.frestrictLe.{0, 0} t)
+              ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+          ⇑(AnvBandit.ExecutionLaw.observedKernel M p C lam t) :=
+⋯
+theorem AnvBandit.ExecutionLaw.finite_original_observed_law : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          ∀ (t : ℕ),
+            LE.le.{0} t p.T →
+              Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν)
+                (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t)
+                  (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) :=
+⋯
+theorem AnvBandit.ExecutionLaw.finite_original_execution_state_law : ∀ {n K : ℕ}
+  [inst : MeasurableSpace.{0} (AnvBandit.Execution.State n K)] (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst_1 : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          ∀ (t : ℕ),
+            LE.le.{0} t p.T →
+              Eq.{1}
+                (MeasureTheory.Measure.map.{0, 0}
+                  (fun ω =>
+                    AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+                      (AnvBandit.ExecutionLaw.pathContacts p ω) t)
+                  ν)
+                (MeasureTheory.Measure.map.{0, 0}
+                  (fun ω =>
+                    AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+                      (AnvBandit.ExecutionLaw.pathContacts p ω) t)
+                  (AnvBandit.ExecutionLaw.executionMeasure M p C lam)) :=
+⋯
+theorem AnvBandit.ExecutionLaw.finite_observed_statistic_transfer.{u_1} : ∀ {n K : ℕ} {A : Type u_1}
+  [inst : MeasurableSpace.{u_1} A] (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K)
+  (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n))
+  [inst_1 : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => ω (HAdd.hAdd.{0, 0, 0} t 1))
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.observedKernel M p C lam t)) →
+      ∀ (t : ℕ),
+        LE.le.{0} t p.T →
+          ∀ (f : AnvBandit.ExecutionLaw.Prefix n t → A),
+            (∀ (h : AnvBandit.ExecutionLaw.Prefix n t),
+                Eq.{u_1 + 1} (f (AnvBandit.ExecutionLaw.observedPrefix p t h)) (f h)) →
+              Eq.{u_1 + 1} (MeasureTheory.Measure.map.{0, u_1} (fun ω => f (Preorder.frestrictLe.{0, 0} t ω)) ν)
+                (MeasureTheory.Measure.map.{0, u_1} (fun ω => f (Preorder.frestrictLe.{0, 0} t ω))
+                  (AnvBandit.ExecutionLaw.executionMeasure M p C lam)) :=
+⋯
+theorem AnvBandit.ExecutionLaw.observed_conditional_law : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (t : ℕ),
+  ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => ω (HAdd.hAdd.{0, 0, 0} t 1)) (Preorder.frestrictLe.{0, 0} t)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C
+          lam)) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t)
+      (AnvBandit.ExecutionLaw.observedMeasure M p C lam)]
+    ⇑(AnvBandit.ExecutionLaw.observedKernel M p C lam t) :=
+⋯
+theorem AnvBandit.GlobalRegret.weightedLoss_global_personal_candidate : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ) (cmax : ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      (∀ (k : Fin K), LE.le.{0} (c k) cmax) →
+        LE.le.{0} (AnvBandit.GlobalRegret.weightedLoss M p C lam c)
+          (HAdd.hAdd.{0, 0, 0}
+            (HAdd.hAdd.{0, 0, 0}
+              (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) (AnvBandit.ActualWaiting.expectedWaiting M p C lam))
+              (M.Ccap c p.L))
+            (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) ↑p.T))) :=
+⋯
+def AnvBandit.GlobalRegret.pathCost : {n K : ℕ} →
+  AnvBandit.Execution.Params n K → (Fin K → ℝ) → AnvBandit.ExecutionLaw.Path n → ℝ :=
+fun {n K} p c ω =>
+  ∑ t ∈ Finset.range p.T,
+    ∑ i,
+      c
+        (AnvBandit.Execution.I p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+          (AnvBandit.ExecutionLaw.pathContacts p ω) t i)
+theorem AnvBandit.GlobalRegret.goodLoss_global_exact : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ) (cmax : ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    Eq.{1} (c M.star) 0 →
+      (∀ (k : Fin K), LE.le.{0} (c k) cmax) →
+        LE.le.{0} (AnvBandit.GlobalRegret.goodLoss M p C lam c)
+          (HAdd.hAdd.{0, 0, 0}
+            (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) (AnvBandit.ActualWaiting.expectedWaiting M p C lam))
+            (M.Clam c p.L 0 lam)) :=
+⋯
+theorem AnvBandit.GlobalRegret.weightedLoss_le_goodLoss_add_failure : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ) (cmax : ℝ),
+  (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+    (∀ (k : Fin K), LE.le.{0} (c k) cmax) →
+      LE.le.{0} (AnvBandit.GlobalRegret.weightedLoss M p C lam c)
+        (HAdd.hAdd.{0, 0, 0} (AnvBandit.GlobalRegret.goodLoss M p C lam c)
+          (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) ↑p.T))) :=
+⋯
+theorem AnvBandit.GlobalTheorem.team_regret_global_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  have c := M.rho p.T lam;
+  have cmax := M.supOthers c;
+  have Pbar :=
+    min.{0} (↑p.T)
+      (AnvBandit.Pbeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H) (↑(AnvBandit.ActualPropagation.preparation M p))
+        p.β);
+  LE.le.{0} (AnvBandit.TrajectoryExpectation.teamRegret M p C lam)
+    (min.{0} (HMul.hMul.{0, 0, 0} ↑n ↑p.T)
+      (HAdd.hAdd.{0, 0, 0} (M.Gamma lam)
+        (min.{0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) ↑p.T)
+          (HAdd.hAdd.{0, 0, 0}
+            (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) Pbar) (M.Clam c p.L 0 lam))
+            (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) ↑p.T)))))) :=
+⋯
+theorem AnvBandit.TrajectoryExpectation.teamRegret_conversion : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  LE.le.{0} (AnvBandit.TrajectoryExpectation.teamRegret M p C lam)
+    (HAdd.hAdd.{0, 0, 0} (M.Gamma lam) (AnvBandit.GlobalRegret.weightedLoss M p C lam (M.rho p.T lam))) :=
+⋯
+def AnvBandit.TrajectoryExpectation.oracle : {n K : ℕ} → AnvBandit.DecayModel n K → ℕ → Fin 2 → ℝ :=
+fun {n K} M T lam => ite.{1} (Eq.{1} lam 0) (AnvBandit.Vstar0 M) (AnvBandit.Vstar1 M)
+def AnvBandit.TrajectoryExpectation.pathReward : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → Fin 2 → AnvBandit.ExecutionLaw.Path n → ℝ :=
+fun {n K} M p lam ω =>
+  AnvBandit.TrajectoryExpectation.jointValue M lam (AnvBandit.TrajectoryExpectation.pathActions p ω)
+theorem AnvBandit.ObservedRegret.original_team_regret_global_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          have c := M.rho p.T lam;
+          have cmax := M.supOthers c;
+          have Pbar :=
+            min.{0} (↑p.T)
+              (AnvBandit.Pbeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H)
+                (↑(AnvBandit.ActualPropagation.preparation M p)) p.β);
+          LE.le.{0} (AnvBandit.ObservedRegret.originalTeamRegret M p lam ν)
+            (min.{0} (HMul.hMul.{0, 0, 0} ↑n ↑p.T)
+              (HAdd.hAdd.{0, 0, 0} (M.Gamma lam)
+                (min.{0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) ↑p.T)
+                  (HAdd.hAdd.{0, 0, 0}
+                    (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) Pbar)
+                      (M.Clam c p.L 0 lam))
+                    (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) ↑p.T)))))) :=
+⋯
+theorem AnvBandit.TrajectoryExpectation.teamRegret_nonneg : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  LE.le.{0} 0 (AnvBandit.TrajectoryExpectation.teamRegret M p C lam) :=
+⋯
+theorem AnvBandit.ObservedRegret.original_integral_eq : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          ∀ (F : AnvBandit.ExecutionLaw.Path n → ℝ),
+            (∀ (ω ω' : ℕ → AnvBandit.ExecutionLaw.Outcome n),
+                Eq.{1} (Preorder.frestrictLe.{0, 0} p.T ω) (Preorder.frestrictLe.{0, 0} p.T ω') → Eq.{1} (F ω) (F ω')) →
+              (∀ (ω : AnvBandit.ExecutionLaw.Path n), Eq.{1} (F (AnvBandit.ExecutionLaw.observedPath p ω)) (F ω)) →
+                Eq.{1} (∫ (ω : AnvBandit.ExecutionLaw.Path n), F ω ∂ν)
+                  (∫ (ω : AnvBandit.ExecutionLaw.Path n), F ω ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam) :=
+⋯
+theorem AnvBandit.ObservedRegret.original_weightedLoss_eq : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          ∀ (c : Fin K → ℝ),
+            Eq.{1} (∫ (ω : AnvBandit.ExecutionLaw.Path n), AnvBandit.GlobalRegret.pathCost p c ω ∂ν)
+              (AnvBandit.GlobalRegret.weightedLoss M p C lam c) :=
+⋯
+theorem AnvBandit.ObservedRegret.run_prefix_congr : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K)
+  (ω ω' : AnvBandit.ExecutionLaw.Path n) (T t : ℕ),
+  LE.le.{0} t T →
+    Eq.{1} (Preorder.frestrictLe.{0, 0} T ω) (Preorder.frestrictLe.{0, 0} T ω') →
+      Eq.{1}
+        (AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+          (AnvBandit.ExecutionLaw.pathContacts p ω) t)
+        (AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω'))
+          (AnvBandit.ExecutionLaw.pathContacts p ω') t) :=
+⋯
+theorem AnvBandit.ObservedRegret.pathCost_observed : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K) (c : Fin K → ℝ)
+  (ω : AnvBandit.ExecutionLaw.Path n),
+  Eq.{1} (AnvBandit.GlobalRegret.pathCost p c (AnvBandit.ExecutionLaw.observedPath p ω))
+    (AnvBandit.GlobalRegret.pathCost p c ω) :=
+⋯
+theorem AnvBandit.ObservedRegret.original_weightedLoss_global : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          ∀ (c : Fin K → ℝ) (cmax : ℝ),
+            (∀ (k : Fin K), LE.le.{0} 0 (c k)) →
+              Eq.{1} (c M.star) 0 →
+                (∀ (k : Fin K), LE.le.{0} (c k) cmax) →
+                  LE.le.{0} (∫ (ω : AnvBandit.ExecutionLaw.Path n), AnvBandit.GlobalRegret.pathCost p c ω ∂ν)
+                    (HAdd.hAdd.{0, 0, 0}
+                      (HAdd.hAdd.{0, 0, 0}
+                        (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax)
+                          (AnvBandit.ActualWaiting.expectedWaiting M p C lam))
+                        (M.Clam c p.L 0 lam))
+                      (HMul.hMul.{0, 0, 0} p.δ (HMul.hMul.{0, 0, 0} (HMul.hMul.{0, 0, 0} (↑n) cmax) ↑p.T))) :=
+⋯
+theorem AnvBandit.ObservedRegret.original_teamRegret_eq : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          Eq.{1} (AnvBandit.ObservedRegret.originalTeamRegret M p lam ν)
+            (AnvBandit.TrajectoryExpectation.teamRegret M p C lam) :=
+⋯
+theorem AnvBandit.ObservedRegret.original_pathReward_integral : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          Eq.{1} (∫ (ω : AnvBandit.ExecutionLaw.Path n), AnvBandit.TrajectoryExpectation.pathReward M p lam ω ∂ν)
+            (∫ (ω : AnvBandit.ExecutionLaw.Path n),
+              AnvBandit.TrajectoryExpectation.pathReward M p lam
+                ω ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam) :=
+⋯
+theorem AnvBandit.ObservedRegret.pathActions_prefix_congr : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K)
+  (ω ω' : AnvBandit.ExecutionLaw.Path n),
+  Eq.{1} (Preorder.frestrictLe.{0, 0} p.T ω) (Preorder.frestrictLe.{0, 0} p.T ω') →
+    Eq.{1} (AnvBandit.TrajectoryExpectation.pathActions p ω) (AnvBandit.TrajectoryExpectation.pathActions p ω') :=
+⋯
+theorem AnvBandit.ObservedRegret.pathReward_observed : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (ω : AnvBandit.ExecutionLaw.Path n),
+  Eq.{1} (AnvBandit.TrajectoryExpectation.pathReward M p lam (AnvBandit.ExecutionLaw.observedPath p ω))
+    (AnvBandit.TrajectoryExpectation.pathReward M p lam ω) :=
+⋯
+theorem AnvBandit.ActualExplicitRegret.actual_explicit : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (T h : ℕ) (ξ β : ℝ) (hT : LE.le.{0} 1 T) (hh : LE.le.{0} 1 h)
+  (hξ : LT.lt.{0} 0 ξ) (hβ : LT.lt.{0} 1 β),
+  LE.le.{0}
+    (AnvBandit.TrajectoryExpectation.teamRegret M (AnvBandit.Execution.explicitParams M T h ξ β hT hh hξ hβ) C lam)
+    (AnvBandit.explicitBound M T h ξ β (AnvBandit.epsP C) lam) :=
+⋯
+theorem AnvBandit.DecayModel.mkAll_le_thetaM_mul : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) {L : ℝ},
+  LE.le.{0} (AnvBandit.Lstar n K) L →
+    ∀ {k : Fin K}, Membership.mem.{0, 0} M.others k → LE.le.{0} (↑(M.mkAll L k)) (HMul.hMul.{0, 0, 0} (M.thetaM k) L) :=
+⋯
+theorem AnvBandit.DecayModel.Bschedule_le_Bcoef_mul : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) {L : ℝ},
+  LE.le.{0} (AnvBandit.Lstar n K) L → LE.le.{0} (↑(M.Bschedule L)) (HMul.hMul.{0, 0, 0} M.Bcoef L) :=
+⋯
+theorem AnvBandit.DecayModel.lastShortPhase_Hxi_le_rcoef : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) {L ξ β : ℝ}
+  {h : ℕ},
+  LE.le.{0} 1 h →
+    LT.lt.{0} 0 ξ →
+      LT.lt.{0} 1 β →
+        LE.le.{0} (AnvBandit.Lstar n K) L →
+          LE.le.{0} (AnvBandit.lastShortPhase (↑(AnvBandit.Hxi h ξ L)) β ↑(M.Bschedule L)) (M.rcoef ξ β) :=
+⋯
+theorem AnvBandit.DecayModel.Pbeta_Hxi_le : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) {L ξ β : ℝ} {h : ℕ}
+  (C : AnvBandit.ContactMatrix n) (i0 : Fin n),
+  LE.le.{0} 1 h →
+    LT.lt.{0} 0 ξ →
+      LT.lt.{0} 1 β →
+        LE.le.{0} (AnvBandit.Lstar n K) L →
+          LE.le.{0}
+            (AnvBandit.Pbeta ⋯ C i0 (↑(AnvBandit.Hxi h ξ L))
+              (↑(AnvBandit.lastShortPhase (↑(AnvBandit.Hxi h ξ L)) β ↑(M.Bschedule L))) β)
+            (HMul.hMul.{0, 0, 0} (M.Abetaxi ξ β (AnvBandit.epsP C))
+              (HAdd.hAdd.{0, 0, 0} (↑h) (HMul.hMul.{0, 0, 0} ξ L))) :=
+⋯
+theorem AnvBandit.DecayModel.Clam_rhoConst_le : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) {L : ℝ},
+  LE.le.{0} (AnvBandit.Lstar n K) L →
+    ∀ (lam : Fin 2),
+      LE.le.{0} (M.Clam (M.rhoConst lam) L 0 lam)
+        (HAdd.hAdd.{0, 0, 0} (HMul.hMul.{0, 0, 0} (M.Jlam lam) L) (M.Dlam lam)) :=
+⋯
+theorem AnvBandit.DecayModel.Pbeta_general_horizon : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (C : AnvBandit.ContactMatrix n) (i0 : Fin n) {T H : ℕ} {β : ℝ},
+  LE.le.{0} 1 T →
+    LE.le.{0} 1 H →
+      LT.lt.{0} 1 β →
+        LE.le.{0}
+          (AnvBandit.Pbeta ⋯ C i0 (↑H) (↑(AnvBandit.lastShortPhase (↑H) β ↑(M.Bschedule (AnvBandit.LdeltaStar n K T))))
+            β)
+          (HMul.hMul.{0, 0, 0}
+            (HMul.hMul.{0, 0, 0} (AnvBandit.propagationMomentCoefficient n β (AnvBandit.epsP C))
+              (max.{0} 1
+                (HPow.hPow.{0, 0, 0} (HMul.hMul.{0, 0, 0} M.Bcoef (AnvBandit.logConfidenceCoefficient n K))
+                  (HDiv.hDiv.{0, 0, 0} β (HSub.hSub.{0, 0, 0} β 1)))))
+            (HAdd.hAdd.{0, 0, 0} (↑H)
+              (HDiv.hDiv.{0, 0, 0}
+                (HPow.hPow.{0, 0, 0} (Real.log (HAdd.hAdd.{0, 0, 0} (↑T) 1))
+                  (HDiv.hDiv.{0, 0, 0} β (HSub.hSub.{0, 0, 0} β 1)))
+                (HPow.hPow.{0, 0, 0} (↑H)
+                  (HSub.hSub.{0, 0, 0} (HDiv.hDiv.{0, 0, 0} β (HSub.hSub.{0, 0, 0} β 1)) 1))))) :=
+⋯
+theorem AnvBandit.finite_arrival_ae : ∀ {n : ℕ},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} (R0 : AnvBandit.ReachData C.P i0) {A : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 →
+        ∀ᵐ (R : ℕ → Fin n → Fin n) ∂AnvBandit.stepMeasure C,
+          ∀ (i : Fin n), ∃ t, Membership.mem.{0, 0} (AnvBandit.Inform R A t) i :=
+⋯
+theorem AnvBandit.lintegral_sigmaAllE_eq_capped : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} (R0 : AnvBandit.ReachData C.P i0) {A : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 →
+        ∀ (i : Fin n),
+          Eq.{1} (∫⁻ (R : ℕ → Fin n → Fin n), AnvBandit.sigmaAllE R A i ∂AnvBandit.stepMeasure C)
+            (∫⁻ (ω : ℕ → Fin (HSub.hSub.{0, 0, 0} n 1) → Fin n → Fin n),
+              ENNReal.ofReal
+                ↑(min.{0} (AnvBandit.sigmaFrom hd ω A i)
+                    (AnvBandit.tau hd ω i0)) ∂AnvBandit.procMeasure C (HSub.hSub.{0, 0, 0} n 1)) :=
+⋯
+theorem AnvBandit.VpotE_ne_top : ∀ {n : ℕ},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} (R0 : AnvBandit.ReachData C.P i0) {A : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 → Ne.{1} (AnvBandit.VpotE C A) Top.top.{0} :=
+⋯
+theorem AnvBandit.Vpot_eq_toReal_VpotE : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} (R0 : AnvBandit.ReachData C.P i0) {A : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 → Eq.{1} (AnvBandit.Vpot hd C i0 A) (AnvBandit.VpotE C A).toReal :=
+⋯
+theorem AnvBandit.Vpot_source_independent : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 i1 : Fin n} {A : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 →
+        Membership.mem.{0, 0} A i1 → Eq.{1} (AnvBandit.Vpot hd C i0 A) (AnvBandit.Vpot hd C i1 A) :=
+⋯
+theorem AnvBandit.integrable_Vpot_infStep : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} (R0 : AnvBandit.ReachData C.P i0) {A : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 →
+        MeasureTheory.Integrable.{0, 0} (fun J => AnvBandit.Vpot hd C i0 (AnvBandit.infStep J A))
+          (AnvBandit.stepDist C) :=
+⋯
+theorem AnvBandit.Vpot_recursion : ∀ {n : ℕ} {hd : LT.lt.{0} 0 (HSub.hSub.{0, 0, 0} n 1)},
+  LE.le.{0} 2 n →
+    ∀ (C : AnvBandit.ContactMatrix n) {i0 : Fin n} (R0 : AnvBandit.ReachData C.P i0) {A : Finset.{0} (Fin n)},
+      Membership.mem.{0, 0} A i0 →
+        Eq.{1} (AnvBandit.Vpot hd C i0 A)
+          (HAdd.hAdd.{0, 0, 0} (↑(Finset.card.{0} (sdiff.{0} Finset.univ.{0} A)))
+            (∫ (J : Fin n → Fin n), AnvBandit.Vpot hd C i0 (AnvBandit.infStep J A) ∂AnvBandit.stepDist C)) :=
+⋯
+theorem AnvBandit.RealizedReward.Nfin_pathActions : ∀ {n K : ℕ} (p : AnvBandit.Execution.Params n K)
+  (ω : AnvBandit.ExecutionLaw.Path n) (t : Fin p.T) (i : Fin n) (k : Fin K),
+  Eq.{1} (AnvBandit.Nfin (AnvBandit.TrajectoryExpectation.pathActions p ω) t i k)
+    (AnvBandit.Execution.N p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+      (AnvBandit.ExecutionLaw.pathContacts p ω) (↑t) i k) :=
+⋯
+theorem AnvBandit.RealizedReward.pathReward_eq_actualMeans : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (ω : AnvBandit.ExecutionLaw.Path n),
+  Eq.{1} (AnvBandit.TrajectoryExpectation.pathReward M p lam ω)
+    (∑ t,
+      ∑ i,
+        AnvBandit.ExecutionLaw.actualMean M p lam (AnvBandit.ExecutionLaw.pathRewards ω)
+          (AnvBandit.ExecutionLaw.pathContacts p ω) (↑t) i) :=
+⋯
+theorem AnvBandit.RealizedReward.expected_realized_eq_pathReward : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  Eq.{1}
+    (∫ (ω : AnvBandit.ExecutionLaw.Path n),
+      AnvBandit.RealizedReward.realizedTotal p ω ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam)
+    (∫ (ω : AnvBandit.ExecutionLaw.Path n),
+      AnvBandit.TrajectoryExpectation.pathReward M p lam ω ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam) :=
+⋯
+theorem AnvBandit.RealizedReward.expected_realized_eq_pathReward_original : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2)
+  (ν : MeasureTheory.Measure.{0} (AnvBandit.ExecutionLaw.Path n)) [inst : MeasureTheory.IsProbabilityMeasure.{0} ν],
+  Eq.{1} (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0) ν)
+      (MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} 0)
+        (AnvBandit.ExecutionLaw.observedMeasure M p C lam)) →
+    (∀ (t : ℕ),
+        LT.lt.{0} t p.T →
+          ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                (Preorder.frestrictLe.{0, 0} t)
+                ν) =ᵐ[MeasureTheory.Measure.map.{0, 0} (Preorder.frestrictLe.{0, 0} t) ν]
+            ⇑(AnvBandit.ExecutionLaw.rewardKernel M p lam t)) →
+      (∀ (t : ℕ),
+          LT.lt.{0} t p.T →
+            AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+              ⇑(ProbabilityTheory.condDistrib.{0, 0, 0} (fun ω => (ω (HAdd.hAdd.{0, 0, 0} t 1)).2)
+                    (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1)
+                    ν) =ᵐ[MeasureTheory.Measure.map.{0, 0}
+                  (fun ω => Prod.mk.{0, 0} (Preorder.frestrictLe.{0, 0} t ω) (ω (HAdd.hAdd.{0, 0, 0} t 1)).1) ν]
+                ⇑(ProbabilityTheory.Kernel.const.{0, 0} (Prod.{0, 0} (AnvBandit.ExecutionLaw.Prefix n t) (Fin n → Bool))
+                    (PMF.toMeasure.{0} (AnvBandit.ExecutionLaw.contactDistribution C)))) →
+        (∀ (t : ℕ),
+            LT.lt.{0} t p.T →
+              ¬AnvBandit.ExecutionLaw.retainedContact p (HAdd.hAdd.{0, 0, 0} t 1) →
+                ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂ν, Eq.{1} (ω (HAdd.hAdd.{0, 0, 0} t 1)).2 id.{1}) →
+          Eq.{1} (∫ (ω : AnvBandit.ExecutionLaw.Path n), AnvBandit.RealizedReward.realizedTotal p ω ∂ν)
+            (∫ (ω : AnvBandit.ExecutionLaw.Path n), AnvBandit.TrajectoryExpectation.pathReward M p lam ω ∂ν) :=
+⋯
+EXIT_CODE 0
+UTC_END 2026-10-27T16:12:00.808791+00:00

@@ -1,0 +1,94 @@
+'AnvBandit.ObservedPrefix.bernoulli_hoeffding' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ObservedPrefix.integral_weighted_bernoulli_exp_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ObservedPrefix.integral_exponential_le_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ObservedPrefix.measure_good_compl_le_finite' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ObservedPrefix.observed_mean_bounds' depends on axioms: [propext, Classical.choice, Quot.sound]
+@AnvBandit.ObservedPrefix.measure_good_compl_le_finite : ∀ {Ω : Type u_1} [inst : MeasurableSpace Ω] {n K T : Nat}
+  (μ : @MeasureTheory.Measure Ω inst) [@MeasureTheory.IsProbabilityMeasure Ω inst μ]
+  (F : @MeasureTheory.Filtration Ω Nat Nat.instPreorder inst) (selected : Fin n → Fin K → Nat → Ω → Bool)
+  (X p : Fin n → Fin K → Nat → Ω → Real),
+  @LE.le Nat instLENat (@OfNat.ofNat Nat (nat_lit 2) (instOfNatNat (nat_lit 2))) n →
+    @LE.le Nat instLENat (@OfNat.ofNat Nat (nat_lit 2) (instOfNatNat (nat_lit 2))) K →
+      @LE.le Nat instLENat (@OfNat.ofNat Nat (nat_lit 1) (instOfNatNat (nat_lit 1))) T →
+        (∀ (i : Fin n) (k : Fin K) (t : Nat),
+            @LT.lt Nat instLTNat t T →
+              @MeasurableSet Ω (@MeasureTheory.Filtration.seq Ω Nat Nat.instPreorder inst F t)
+                (@setOf Ω fun ω => @Eq Bool (selected i k t ω) true)) →
+          (∀ (i : Fin n) (k : Fin K) (t : Nat),
+              @LT.lt Nat instLTNat t T →
+                @MeasureTheory.StronglyMeasurable Ω Real
+                  (@UniformSpace.toTopologicalSpace Real
+                    (@PseudoMetricSpace.toUniformSpace Real Real.pseudoMetricSpace))
+                  (@MeasureTheory.Filtration.seq Ω Nat Nat.instPreorder inst F
+                    (@HAdd.hAdd Nat Nat Nat (@instHAdd Nat instAddNat) t
+                      (@OfNat.ofNat Nat (nat_lit 1) (instOfNatNat (nat_lit 1)))))
+                  (X i k t)) →
+            (∀ (i : Fin n) (k : Fin K) (t : Nat),
+                @LT.lt Nat instLTNat t T →
+                  @MeasureTheory.StronglyMeasurable Ω Real
+                    (@UniformSpace.toTopologicalSpace Real
+                      (@PseudoMetricSpace.toUniformSpace Real Real.pseudoMetricSpace))
+                    (@MeasureTheory.Filtration.seq Ω Nat Nat.instPreorder inst F t) (p i k t)) →
+              (∀ (i : Fin n) (k : Fin K) (t : Nat),
+                  @LT.lt Nat instLTNat t T →
+                    ∀ (ω : Ω),
+                      Or (@Eq Real (X i k t ω) (@OfNat.ofNat Real (nat_lit 0) (@Zero.toOfNat0 Real Real.instZero)))
+                        (@Eq Real (X i k t ω) (@OfNat.ofNat Real (nat_lit 1) (@One.toOfNat1 Real Real.instOne)))) →
+                (∀ (i : Fin n) (k : Fin K) (t : Nat),
+                    @LT.lt Nat instLTNat t T →
+                      ∀ (ω : Ω),
+                        @Membership.mem Real (Set Real) (@Set.instMembership Real)
+                          (@Set.Icc Real Real.instPreorder
+                            (@OfNat.ofNat Real (nat_lit 0) (@Zero.toOfNat0 Real Real.instZero))
+                            (@OfNat.ofNat Real (nat_lit 1) (@One.toOfNat1 Real Real.instOne)))
+                          (p i k t ω)) →
+                  (∀ (i : Fin n) (k : Fin K) (t : Nat),
+                      @LT.lt Nat instLTNat t T →
+                        @Filter.EventuallyEq Ω Real
+                          (@MeasureTheory.ae Ω (@MeasureTheory.Measure Ω inst)
+                            (@MeasureTheory.Measure.instFunLike Ω inst) ⋯ μ)
+                          (@MeasureTheory.condExp Ω Real (@MeasureTheory.Filtration.seq Ω Nat Nat.instPreorder inst F t)
+                            inst Real.normedAddCommGroup
+                            (@InnerProductSpace.toNormedSpace Real Real Real.instRCLike
+                              (@NormedAddCommGroup.toSeminormedAddCommGroup Real Real.normedAddCommGroup)
+                              (@RCLike.toInnerProductSpaceReal Real Real.instRCLike))
+                            μ (X i k t))
+                          (p i k t)) →
+                    ∀ (δ : Real),
+                      @LT.lt Real Real.instLT (@OfNat.ofNat Real (nat_lit 0) (@Zero.toOfNat0 Real Real.instZero)) δ →
+                        @LE.le Real Real.instLE δ (@OfNat.ofNat Real (nat_lit 1) (@One.toOfNat1 Real Real.instOne)) →
+                          @LE.le Real Real.instLE
+                            (@MeasureTheory.Measure.real Ω inst μ
+                              (@compl (Set Ω) (@Set.instCompl Ω)
+                                (@AnvBandit.ObservedPrefix.good Ω n K selected X p T
+                                  (Real.log
+                                    (@HDiv.hDiv Real Real Real
+                                      (@instHDiv Real (@DivInvMonoid.toDiv Real Real.instDivInvMonoid))
+                                      (@Nat.cast Real Real.instNatCast
+                                        (@HMul.hMul Nat Nat Nat (@instHMul Nat instMulNat)
+                                          (@HMul.hMul Nat Nat Nat (@instHMul Nat instMulNat)
+                                            (@HMul.hMul Nat Nat Nat (@instHMul Nat instMulNat)
+                                              (@OfNat.ofNat Nat (nat_lit 2) (instOfNatNat (nat_lit 2))) n)
+                                            K)
+                                          T))
+                                      δ)))))
+                            δ
+@AnvBandit.ObservedPrefix.observed_mean_bounds : ∀ {Ω : Type u_1} (selected : ℕ → Ω → Bool) (p : ℕ → Ω → ℝ) (b : ℝ)
+  (f : ℕ → ℝ) {m T : ℕ} {ω : Ω},
+  1 ≤ m →
+    m ≤ AnvBandit.ObservedPrefix.count selected T ω →
+      (∀ t < T, selected t ω = true → b ≤ p t ω ∧ p t ω ≤ b + f (AnvBandit.ObservedPrefix.count selected t ω + 1)) →
+        b ≤ AnvBandit.ObservedPrefix.sampleSum selected p m T ω / ↑m ∧
+          AnvBandit.ObservedPrefix.sampleSum selected p m T ω / ↑m ≤ b + AnvBandit.psi f m
+@AnvBandit.ObservedPrefix.good_empirical_mean : ∀ {Ω : Type u_1} {n K : ℕ} (selected : Fin n → Fin K → ℕ → Ω → Bool)
+  (X p : Fin n → Fin K → ℕ → Ω → ℝ) {T : ℕ} {L : ℝ} {ω : Ω},
+  ω ∈ AnvBandit.ObservedPrefix.good selected X p T L →
+    ∀ (i : Fin n) (k : Fin K) (m : ℕ),
+      1 ≤ m →
+        m ≤ AnvBandit.ObservedPrefix.count (selected i k) T ω →
+          |AnvBandit.ObservedPrefix.sampleSum (selected i k) (X i k) m T ω / ↑m -
+                AnvBandit.ObservedPrefix.sampleSum (selected i k) (p i k) m T ω / ↑m| ≤
+            AnvBandit.rdelta L m
+@AnvBandit.ObservedPrefix.good_prefix : ∀ {Ω : Type u_1} {n K : ℕ} (selected : Fin n → Fin K → ℕ → Ω → Bool)
+  (X p : Fin n → Fin K → ℕ → Ω → ℝ) {v T : ℕ} {L : ℝ} {ω : Ω},
+  v ≤ T → ω ∈ AnvBandit.ObservedPrefix.good selected X p T L → ω ∈ AnvBandit.ObservedPrefix.good selected X p v L

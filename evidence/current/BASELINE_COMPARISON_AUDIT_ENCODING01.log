@@ -1,0 +1,56 @@
+COMMAND: lake env lean AnvBandit/CheckBaselineComparison.lean
+def AnvBandit.BaselineComparison.cooperativeBound : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → Fin 2 → ℝ :=
+fun {n K} M p C lam =>
+  AnvBandit.Uco (↑n * ↑p.T) (M.Gamma lam) (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+    (AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam)) (p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T))
+def AnvBandit.BaselineComparison.independentBound : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → Fin 2 → ℝ :=
+fun {n K} M p lam =>
+  AnvBandit.Uind (↑n * ↑p.T) (M.Gamma lam) (↑n * M.supOthers (M.rho p.T lam) * ↑p.T) (M.Flam (M.rho p.T lam) p.L lam)
+    (p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T))
+theorem AnvBandit.BaselineComparison.corollary_4_2 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam) < M.Flam (M.rho p.T lam) p.L lam →
+    AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam) + p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T) <
+        min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T) (↑n * ↑p.T - M.Gamma lam) →
+      AnvBandit.TrajectoryExpectation.teamRegret M p C lam ≤ AnvBandit.BaselineComparison.cooperativeBound M p C lam ∧
+        AnvBandit.BaselineTrajectory.teamRegret M p lam ≤ AnvBandit.BaselineComparison.independentBound M p lam ∧
+          AnvBandit.BaselineComparison.cooperativeBound M p C lam <
+            AnvBandit.BaselineComparison.independentBound M p lam :=
+fun {n K} M p C lam hcost hcut =>
+  ⟨AnvBandit.Main.theorem_4_1 M p C lam,
+    ⟨AnvBandit.BaselineTrajectory.teamRegret_bound M p lam,
+      AnvBandit.corollary_4_2 p.T (M.Gamma lam) (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+        (M.Flam (M.rho p.T lam) p.L lam) (AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam)) p.δ hcost hcut⟩⟩
+'AnvBandit.BaselineComparison.corollary_4_2' depends on axioms: [propext, Classical.choice, Quot.sound]
+AUDIT_EXIT_CODE=0
+892ed3d5f3189b0ec2df14323a2839c60283f0de52ea1ca7fba8127f650d8fd6  AnvBandit/BaselineEncoding.lean
+COMMAND: lake env lean --profile -o .lake/build/lib/lean/AnvBandit/BaselineEncoding.olean AnvBandit/BaselineEncoding.lean
+import took 3.59s
+.olean serialization took 273ms
+tactic execution of Lean.Parser.Tactic.change took 3.62s
+typeclass inference of MeasureTheory.SFinite took 145ms
+cumulative profiling times:
+	.olean serialization 273ms
+	attribute application 0.0287ms
+	blocked (unaccounted) 3.92ms
+	elaboration 23.5ms
+	fix level params 0.133ms
+	import 3.59s
+	initialization 26.8ms
+	instantiate metavars 0.477ms
+	interpretation 394ms
+	let-to-have transformation 0.103ms
+	linting 3.37ms
+	module linting 0.00138ms
+	overlappingInstancesLinter 1.71ms
+	parsing 2.95ms
+	process pre-definitions 1.67ms
+	share common exprs 1.28ms
+	tactic execution 3.68s
+	tacticAnalysis 13.3ms
+	type checking 10ms
+	typeclass inference 264ms
+ENCODING_EXIT_CODE=0
+892ed3d5f3189b0ec2df14323a2839c60283f0de52ea1ca7fba8127f650d8fd6  AnvBandit/BaselineEncoding.lean

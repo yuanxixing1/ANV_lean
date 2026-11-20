@@ -1,0 +1,266 @@
+def AnvBandit.IsExponential : {n K : ℕ} → AnvBandit.DecayModel n K → (Fin K → ℝ) → (Fin K → ℝ) → Prop :=
+fun {n K} M a eta =>
+  (∀ (k : Fin K), 0 ≤ a k) ∧
+    (∀ (k : Fin K), 0 < eta k) ∧ ∀ (k : Fin K) (s : ℕ), 1 ≤ s → M.f k s = a k * Real.exp (-eta k * (↑s - 1))
+theorem AnvBandit.Vstar0_eq_n_Vser : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K),
+  AnvBandit.Vstar0 M = ↑n * AnvBandit.Vser M T :=
+fun {n K T} M =>
+  le_antisymm
+    (id
+      (Finset.sup'_le (AnvBandit.Vstar0._proof_2 M) (AnvBandit.J0 M) fun u a =>
+        Eq.mpr (id (congrArg (fun _a => _a ≤ ↑n * AnvBandit.Vser M T) (AnvBandit.J0_eq_serial M u)))
+          (Trans.trans (Finset.sum_le_sum fun i x => AnvBandit.le_Vser M (AnvBandit.sum_Ntot_eq u i))
+            (of_eq_true
+              (Eq.trans
+                (congrFun'
+                  (congrArg Eq
+                    (Eq.trans (Finset.sum_const (AnvBandit.Vser M T))
+                      (Eq.trans (congrFun' (congrArg HSMul.hSMul (Fintype.card_fin n)) (AnvBandit.Vser M T))
+                        (nsmul_eq_mul n (AnvBandit.Vser M T)))))
+                  (↑n * AnvBandit.Vser M T))
+                (eq_self (↑n * AnvBandit.Vser M T)))))))
+    (Exists.casesOn (Finset.exists_mem_eq_sup' (AnvBandit.comps_nonempty M T) fun q => M.serialAlloc fun k => ↑(q k))
+      fun q h =>
+      And.casesOn h fun hq hmax =>
+        have hsum := (Finset.mem_filter.mp hq).right;
+        Exists.casesOn (AnvBandit.exists_sched_with_counts (fun k => ↑(q k)) T hsum) fun v hv =>
+          have hval :=
+            Eq.mpr (id (congrArg (fun _a => _a = ↑n * AnvBandit.Vser M T) (AnvBandit.J0_eq_serial M fun _i t => v t)))
+              (have hcnt := fun i => funext fun k => hv k;
+              Eq.mpr
+                (id
+                  (congrFun'
+                    (congrArg Eq
+                      (Finset.sum_congr (Eq.refl Finset.univ) fun x a =>
+                        congrArg M.serialAlloc (funext fun k => congrFun ((fun i => hcnt i) x) k)))
+                    (↑n * AnvBandit.Vser M T)))
+                (Eq.mpr
+                  (id
+                    (congrFun'
+                      (congrArg Eq
+                        (Eq.trans (Finset.sum_const (M.serialAlloc fun k => ↑(q k)))
+                          (Eq.trans
+                            (congrFun' (congrArg HSMul.hSMul (Fintype.card_fin n)) (M.serialAlloc fun k => ↑(q k)))
+                            (nsmul_eq_mul n (M.serialAlloc fun k => ↑(q k))))))
+                      (↑n * AnvBandit.Vser M T)))
+                  ((fun {α β γ} [HMul α β γ] a a_1 e_a =>
+                      Eq.rec (motive := fun a_2 e_a => ∀ (a_3 a_4 : β), a_3 = a_4 → a * a_3 = a_2 * a_4)
+                        (fun a_2 a_3 e_a => e_a ▸ Eq.refl (a * a_2)) e_a)
+                    (↑n) (↑n) (Eq.refl ↑n) (M.serialAlloc fun k => ↑(q k)) (AnvBandit.Vser M T) (Eq.symm hmax))));
+          Eq.mpr (id (congrArg (fun _a => _a ≤ AnvBandit.Vstar0 M) (Eq.symm hval)))
+            (Finset.le_sup' (AnvBandit.J0 M) (Finset.mem_univ fun _i t => v t)))
+theorem AnvBandit.benchmark_public_sandwich : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K),
+  AnvBandit.Vser M (n * T) ≤ AnvBandit.Vstar1 M ∧ AnvBandit.Vstar1 M ≤ AnvBandit.Vser M (n * T) + ↑(n - 1) * M.A :=
+fun {n K T} M => ⟨AnvBandit.Vser_le_Vstar1 M, AnvBandit.Vstar1_le_Vser M⟩
+theorem AnvBandit.Vser_eq_greedy_policy : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (t : ℕ),
+  AnvBandit.Vser M t =
+    AnvBandit.Greedy.payoff (AnvBandit.serialMarg M) (AnvBandit.Greedy.policy ⋯ (AnvBandit.serialMarg M) t) :=
+fun {n K} M t =>
+  let hK :=
+    have this := M.two_le_K;
+    Decidable.byContradiction fun a => AnvBandit.Vser_eq_greedy_policy._proof_1 this a;
+  le_antisymm
+    (id
+      (Finset.sup'_le (AnvBandit.comps_nonempty M t) (fun f => M.serialAlloc fun k => ↑(f k)) fun q hq =>
+        Eq.mpr
+          (id
+            (congrArg
+              (fun _a =>
+                _a ≤
+                  AnvBandit.Greedy.payoff (AnvBandit.serialMarg M)
+                    (AnvBandit.Greedy.policy
+                      (have this := M.two_le_K;
+                      Decidable.byContradiction fun a => AnvBandit.Vser_eq_greedy_policy._proof_1 this a)
+                      (AnvBandit.serialMarg M) t))
+              (AnvBandit.serialAlloc_eq_greedyAllocation M fun k => ↑(q k))))
+          (AnvBandit.Greedy.allocation_le_greedy hK (AnvBandit.serialMarg M) (AnvBandit.serialMarg_antitone M) t
+            (fun k => ↑(q k)) (Finset.mem_filter.mp hq).right)))
+    (Eq.mpr
+      (id
+        (congrArg (fun _a => _a ≤ AnvBandit.Vser M t)
+          (AnvBandit.Greedy.payoff_eq_allocation (AnvBandit.serialMarg M)
+            (AnvBandit.Greedy.policy
+              (have this := M.two_le_K;
+              Decidable.byContradiction fun a => AnvBandit.Vser_eq_greedy_policy._proof_1 this a)
+              (AnvBandit.serialMarg M) t))))
+      (Eq.mpr
+        (id
+          (congrArg (fun _a => _a ≤ AnvBandit.Vser M t)
+            (Eq.symm
+              (AnvBandit.serialAlloc_eq_greedyAllocation M
+                (AnvBandit.Greedy.counts
+                  (AnvBandit.Greedy.policy
+                    (have this := M.two_le_K;
+                    Decidable.byContradiction fun a => AnvBandit.Vser_eq_greedy_policy._proof_1 this a)
+                    (AnvBandit.serialMarg M) t))))))
+        (AnvBandit.le_Vser M
+          (Eq.mpr
+            (id
+              (congrArg (fun _a => _a = t)
+                (AnvBandit.Greedy.counts_total
+                  (AnvBandit.Greedy.policy
+                    (have this := M.two_le_K;
+                    Decidable.byContradiction fun a => AnvBandit.Vser_eq_greedy_policy._proof_1 this a)
+                    (AnvBandit.serialMarg M) t))))
+            (Eq.mpr
+              (id
+                (congrArg (fun _a => _a = t)
+                  (AnvBandit.Greedy.policy_length
+                    (have this := M.two_le_K;
+                    Decidable.byContradiction fun a => AnvBandit.Vser_eq_greedy_policy._proof_1 this a)
+                    (AnvBandit.serialMarg M) t)))
+              (Eq.refl t))))))
+theorem AnvBandit.Vser_eq_dp : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (t : ℕ),
+  AnvBandit.Vser M t = AnvBandit.Greedy.dp ⋯ (AnvBandit.serialMarg M) t :=
+fun {n K} M t =>
+  Eq.mpr
+    (id
+      (congrArg (fun _a => AnvBandit.Vser M t = _a)
+        (AnvBandit.Greedy.dp_eq_policy
+          (have this := M.two_le_K;
+          Decidable.byContradiction fun a => AnvBandit.Vser_eq_greedy_policy._proof_1 this a)
+          (AnvBandit.serialMarg M) (AnvBandit.serialMarg_antitone M) t)))
+    (Eq.mpr
+      (id
+        (congrArg
+          (fun _a =>
+            _a =
+              AnvBandit.Greedy.payoff (AnvBandit.serialMarg M)
+                (AnvBandit.Greedy.policy
+                  (have this := M.two_le_K;
+                  Decidable.byContradiction fun a => AnvBandit.Vser_eq_greedy_policy._proof_1 this a)
+                  (AnvBandit.serialMarg M) t))
+          (AnvBandit.Vser_eq_greedy_policy M t)))
+      (Eq.refl
+        (AnvBandit.Greedy.payoff (AnvBandit.serialMarg M)
+          (AnvBandit.Greedy.policy
+            (have this := M.two_le_K;
+            Decidable.byContradiction fun a => AnvBandit.Vser_eq_greedy_policy._proof_1 this a)
+            (AnvBandit.serialMarg M) t))))
+def AnvBandit.Greedy.policy : {K : ℕ} → 0 < K → (Fin K → ℕ → ℝ) → ℕ → List (Fin K) :=
+fun {K} hK v x => Nat.brecOn (motive := fun x => (Fin K → ℕ → ℝ) → List (Fin K)) x (AnvBandit.Greedy.policy._f hK) v
+def AnvBandit.Greedy.dp : {K : ℕ} → 0 < K → (Fin K → ℕ → ℝ) → ℕ → ℝ :=
+fun {K} hK v x => Nat.brecOn (motive := fun x => (Fin K → ℕ → ℝ) → ℝ) x (AnvBandit.Greedy.dp._f hK) v
+theorem AnvBandit.ExponentialDP.Vstar1_eq_expBench : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K) (a eta : Fin K → ℝ),
+  AnvBandit.IsExponential M a eta → AnvBandit.Vstar1 M = AnvBandit.expBench n ⋯ M.b a eta T :=
+fun {n K T} M a eta hexp =>
+  le_antisymm
+    (id
+      (Finset.sup'_le (AnvBandit.Vstar0._proof_2 M) (AnvBandit.J1 M) fun u a_1 =>
+        Exists.casesOn (AnvBandit.ExponentialDP.joint_le_synchronous M a eta hexp u) fun v hv =>
+          LE.le.trans hv (Finset.le_sup' (AnvBandit.syncExpVal n M.b a eta) (Finset.mem_univ v))))
+    (id
+      (Finset.sup'_le
+        (AnvBandit.expBench._proof_1
+          (have this := M.two_le_K;
+          Decidable.byContradiction fun a => AnvBandit.ExponentialDP.Vstar1_eq_expBench._proof_1 this a)
+          T)
+        (AnvBandit.syncExpVal n M.b a eta) fun v a_1 =>
+        have heq :=
+          Eq.mpr
+            (id
+              (congrArg (fun _a => _a = AnvBandit.syncExpVal n M.b a eta v)
+                (Eq.symm (AnvBandit.ExponentialDP.value_eq_J1 M a eta hexp fun x t => v t))))
+            (have hl :=
+              Eq.mpr (id (congrArg (fun _a => _a = List.ofFn fun t x => v t) List.map_ofFn))
+                (Eq.refl (List.ofFn (AnvBandit.ExponentialDP.pure ∘ v)));
+            Eq.mpr
+              (id
+                (congrArg (fun _a => AnvBandit.ExponentialDP.value M.b a eta 0 _a = AnvBandit.syncExpVal n M.b a eta v)
+                  (Eq.symm hl)))
+              (AnvBandit.ExponentialDP.value_sync_ofFn M.b a eta v));
+        Eq.mpr (id (congrArg (fun _a => _a ≤ AnvBandit.Vstar1 M) (Eq.symm heq)))
+          (Finset.le_sup' (AnvBandit.J1 M) (Finset.mem_univ fun x t => v t))))
+theorem AnvBandit.ExponentialDP.greedy_policy_attains : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K)
+  (a eta : Fin K → ℝ),
+  AnvBandit.IsExponential M a eta →
+    AnvBandit.Vstar1 M =
+      AnvBandit.ExponentialDP.value M.b a eta 0
+        (List.map AnvBandit.ExponentialDP.pure
+          (AnvBandit.Greedy.policy ⋯ (AnvBandit.ExponentialDP.stateMarg M.b a eta 0) T)) :=
+fun {n K T} M a eta hexp =>
+  let hK :=
+    have this := M.two_le_K;
+    Decidable.byContradiction fun a => AnvBandit.ExponentialDP.Vstar1_eq_expBench._proof_1 this a;
+  let ks := AnvBandit.Greedy.policy hK (AnvBandit.ExponentialDP.stateMarg M.b a eta 0) T;
+  have hlen := AnvBandit.Greedy.policy_length hK (AnvBandit.ExponentialDP.stateMarg M.b a eta 0) T;
+  id
+    (le_antisymm
+      (id
+        (Finset.sup'_le (AnvBandit.Vstar0._proof_2 M) (AnvBandit.J1 M) fun u a_1 =>
+          Exists.casesOn (AnvBandit.ExponentialDP.joint_le_synchronous M a eta hexp u) fun v hv =>
+            have hg :=
+              AnvBandit.Greedy.payoff_le_policy hK (AnvBandit.ExponentialDP.stateMarg M.b a eta 0)
+                (AnvBandit.ExponentialDP.stateMarg_antitone M.b a eta 0 hexp.left hexp.right.left) (List.ofFn v);
+            Eq.mpr
+              (id
+                (congrArg (fun _a => AnvBandit.J1 M u ≤ _a)
+                  (AnvBandit.ExponentialDP.value_sync_eq_payoff M.b a eta 0 ks)))
+              (LE.le.trans
+                (Eq.mp
+                  (congrArg (fun _a => AnvBandit.J1 M u ≤ _a)
+                    (AnvBandit.ExponentialDP.value_sync_eq_payoff M.b a eta 0 (List.ofFn v)))
+                  (Eq.mp
+                    (congrArg (fun _a => AnvBandit.J1 M u ≤ _a)
+                      (Eq.symm (AnvBandit.ExponentialDP.value_sync_ofFn M.b a eta v)))
+                    hv))
+                (Eq.mp
+                  (congrArg
+                    (LE.le (AnvBandit.Greedy.payoff (AnvBandit.ExponentialDP.stateMarg M.b a eta 0) (List.ofFn v)))
+                    (congrArg (AnvBandit.Greedy.payoff (AnvBandit.ExponentialDP.stateMarg M.b a eta 0))
+                      (AnvBandit.Greedy.policy.congr_simp hK (AnvBandit.ExponentialDP.stateMarg M.b a eta 0)
+                        (AnvBandit.ExponentialDP.stateMarg M.b a eta 0)
+                        (Eq.refl (AnvBandit.ExponentialDP.stateMarg M.b a eta 0)) (List.ofFn v).length T
+                        List.length_ofFn)))
+                  hg))))
+      (have hv := AnvBandit.ExponentialDP.exists_ofFn_length ks hlen;
+      Exists.casesOn hv fun v hv =>
+        Eq.mpr
+          (id
+            (congrArg
+              (fun _a =>
+                AnvBandit.ExponentialDP.value M.b a eta 0 (List.map AnvBandit.ExponentialDP.pure _a) ≤
+                  AnvBandit.Vstar1 M)
+              (Eq.symm hv)))
+          (Eq.mpr
+            (id (congrArg (fun _a => _a ≤ AnvBandit.Vstar1 M) (AnvBandit.ExponentialDP.value_sync_ofFn M.b a eta v)))
+            (have heq :=
+              Eq.mpr
+                (id
+                  (congrArg (fun _a => _a = AnvBandit.syncExpVal n M.b a eta v)
+                    (Eq.symm (AnvBandit.ExponentialDP.value_eq_J1 M a eta hexp fun x t => v t))))
+                (have hl :=
+                  Eq.mpr (id (congrArg (fun _a => _a = List.ofFn fun t x => v t) List.map_ofFn))
+                    (Eq.refl (List.ofFn (AnvBandit.ExponentialDP.pure ∘ v)));
+                Eq.mpr
+                  (id
+                    (congrArg
+                      (fun _a => AnvBandit.ExponentialDP.value M.b a eta 0 _a = AnvBandit.syncExpVal n M.b a eta v)
+                      (Eq.symm hl)))
+                  (AnvBandit.ExponentialDP.value_sync_ofFn M.b a eta v));
+            Eq.mpr (id (congrArg (fun _a => _a ≤ AnvBandit.Vstar1 M) (Eq.symm heq)))
+              (Finset.le_sup' (AnvBandit.J1 M) (Finset.mem_univ fun x t => v t))))))
+theorem AnvBandit.ExponentialDP.proposition_A_4_full : ∀ {n K T : ℕ} (M : AnvBandit.DecayModel n K) (a eta : Fin K → ℝ),
+  AnvBandit.IsExponential M a eta → AnvBandit.Vstar1 M = AnvBandit.greedyVal n ⋯ M.b a eta T :=
+fun {n K T} M a eta hexp =>
+  Eq.mpr
+    (id
+      (congrArg
+        (fun _a =>
+          _a =
+            AnvBandit.greedyVal n
+              (have this := M.two_le_K;
+              Decidable.byContradiction fun a => AnvBandit.ExponentialDP.Vstar1_eq_expBench._proof_1 this a)
+              M.b a eta T)
+        (AnvBandit.ExponentialDP.Vstar1_eq_expBench M a eta hexp)))
+    (AnvBandit.proposition_A_4 n
+      (have this := M.two_le_K;
+      Decidable.byContradiction fun a => AnvBandit.ExponentialDP.Vstar1_eq_expBench._proof_1 this a)
+      M.b a eta hexp.left hexp.right.left T)
+'AnvBandit.Vstar0_eq_n_Vser' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.benchmark_public_sandwich' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Vser_eq_greedy_policy' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Vser_eq_dp' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExponentialDP.Vstar1_eq_expBench' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExponentialDP.greedy_policy_attains' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.ExponentialDP.proposition_A_4_full' depends on axioms: [propext, Classical.choice, Quot.sound]

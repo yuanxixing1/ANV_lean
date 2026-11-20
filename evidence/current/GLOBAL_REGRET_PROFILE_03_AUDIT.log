@@ -1,0 +1,68 @@
+Tue Oct 27 13:54:45 UTC 2026
+e3673d781f4112a4c36ac44422be0933b56e35ecccf09afee0805e2db3c6bbe8  AnvBandit/GlobalRegret.lean
+COMMAND: lake env lean --profile -o .lake/build/lib/lean/AnvBandit/GlobalRegret.olean AnvBandit/GlobalRegret.lean
+import took 13.1s
+.olean serialization took 446ms
+AnvBandit/GlobalRegret.lean:45:18: warning: Variable name `t` is not explicitly referenced.
+
+The binding can be removed (if unused) or named `_` (if used implicitly).
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+AnvBandit/GlobalRegret.lean:45:41: warning: Variable name `i` is not explicitly referenced.
+
+The binding can be removed (if unused) or named `_` (if used implicitly).
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+simp took 155ms
+cumulative profiling times:
+	.olean serialization 446ms
+	attribute application 0.148ms
+	congr simp thm 5.63ms
+	dsimp 8.38ms
+	elaboration 97ms
+	fix level params 0.547ms
+	import 13.1s
+	initialization 33.2ms
+	instantiate metavars 1.09ms
+	interpretation 815ms
+	let-to-have transformation 0.497ms
+	linting 23.5ms
+	module linting 0.00144ms
+	norm_num 8.34ms
+	overlappingInstancesLinter 7.96ms
+	parsing 16ms
+	process pre-definitions 12.9ms
+	ring 22.1ms
+	share common exprs 5.29ms
+	simp 303ms
+	tactic execution 259ms
+	tacticAnalysis 45.9ms
+	type checking 57.7ms
+	typeclass inference 1.05s
+EXIT_CODE=0
+e3673d781f4112a4c36ac44422be0933b56e35ecccf09afee0805e2db3c6bbe8  AnvBandit/GlobalRegret.lean
+COMMAND: lake env lean AnvBandit/GlobalRegretCheck.lean
+@AnvBandit.GlobalRegret.weightedLoss_global_personal_candidate : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ) (cmax : ℝ),
+  (∀ (k : Fin K), 0 ≤ c k) →
+    c M.star = 0 →
+      (∀ (k : Fin K), c k ≤ cmax) →
+        AnvBandit.GlobalRegret.weightedLoss M p C lam c ≤
+          ↑n * cmax * AnvBandit.ActualWaiting.expectedWaiting M p C lam + M.Ccap c p.L + p.δ * (↑n * cmax * ↑p.T)
+'AnvBandit.GlobalRegret.weightedLoss_global_personal_candidate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+def AnvBandit.GlobalRegret.weightedLoss : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → Fin 2 → (Fin K → ℝ) → ℝ :=
+fun {n K} M p C lam c =>
+  ∫ (ω : AnvBandit.ExecutionLaw.Path n),
+    AnvBandit.GlobalRegret.pathCost p c ω ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam
+def AnvBandit.GlobalRegret.pathCost : {n K : ℕ} →
+  AnvBandit.Execution.Params n K → (Fin K → ℝ) → AnvBandit.ExecutionLaw.Path n → ℝ :=
+fun {n K} p c ω =>
+  ∑ t ∈ Finset.range p.T,
+    ∑ i,
+      c
+        (AnvBandit.Execution.I p (AnvBandit.ExecutionLaw.realTape (AnvBandit.ExecutionLaw.pathRewards ω))
+          (AnvBandit.ExecutionLaw.pathContacts p ω) t i)
+AUDIT_EXIT_CODE=0

@@ -1,0 +1,86 @@
+'AnvBandit.Absorbing.state_measurable_beforeContact' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Absorbing.error_measurable_beforeContact' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Absorbing.prefixGood_measurable_beforeContact' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Absorbing.conditional_absorbed_drift' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Absorbing.actual_error_budget_series' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Absorbing.finite_telescope_with_budget' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.integral_Vpot_inform_eq_remainingV' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Absorbing.expectedPotential_le_remaining' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.concreteKbeta_summable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Absorbing.goodLoss_le_exploration_phases' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Absorbing.weighted_loss_potential_branch' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Absorbing.lastPhase_eq_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+AnvBandit.Absorbing.conditional_absorbed_drift {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (j : ℕ) :
+  have t := p.phaseEnd (j + 1) - 1;
+  ∀ᵐ (ω : AnvBandit.ExecutionLaw.Path n) ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam,
+    ↑(Finset.univ \
+            AnvBandit.Absorbing.state M p lam AnvBandit.ExecutionLaw.pathRewards (AnvBandit.ExecutionLaw.pathContacts p)
+              j ω).card ≤
+      AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star)
+            (AnvBandit.Absorbing.state M p lam AnvBandit.ExecutionLaw.pathRewards
+              (AnvBandit.ExecutionLaw.pathContacts p) j ω) -
+          (AnvBandit.ExecutionLaw.executionMeasure M p C lam)[fun ω =>
+              AnvBandit.Vpot ⋯ C (AnvBandit.Execution.holder p M.star)
+                (AnvBandit.Absorbing.state M p lam AnvBandit.ExecutionLaw.pathRewards
+                  (AnvBandit.ExecutionLaw.pathContacts p) (j + 1) ω) |
+              MeasurableSpace.comap (AnvBandit.Absorbing.beforeContact t) inferInstance]
+            ω +
+        AnvBandit.M1 ⋯ C (AnvBandit.Execution.holder p M.star) *
+          AnvBandit.Absorbing.error M p lam AnvBandit.ExecutionLaw.pathRewards (AnvBandit.ExecutionLaw.pathContacts p) j
+            ω
+AnvBandit.Absorbing.actual_error_budget_series.{u_1} {n K : ℕ} {Ω : Type u_1} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (lam : Fin 2) (X : Ω → ℕ → Fin n → Bool) (J : Ω → ℕ → Fin n → Fin n) (ω : Ω) :
+  ∑' (j : ℕ), AnvBandit.dEll (↑p.H) p.β (j + 1) * AnvBandit.Absorbing.error M p lam X J j ω ≤
+    2 * M.Flam (AnvBandit.Absorbing.unitCost M) p.L lam
+AnvBandit.Absorbing.expectedPotential_le_remaining {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (j : ℕ) :
+  AnvBandit.Absorbing.expectedPotential M p C lam j ≤
+    AnvBandit.remainingV ⋯ C (AnvBandit.Execution.holder p M.star) (j - AnvBandit.ActualPropagation.preparation M p)
+AnvBandit.Absorbing.weighted_loss_potential_branch {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ)
+  (hc : ∀ (k : Fin K), 0 ≤ c k) (hstar : c M.star = 0) :
+  AnvBandit.GlobalRegret.goodLoss M p C lam c ≤
+    M.Flam c p.L lam +
+      M.supOthers c *
+        (2 * AnvBandit.M1 ⋯ C (AnvBandit.Execution.holder p M.star) * M.Flam (AnvBandit.Absorbing.unitCost M) p.L lam +
+          AnvBandit.concreteKbeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H) p.β
+            (AnvBandit.ActualPropagation.preparation M p))
+def AnvBandit.Absorbing.state.{u_1} : {n K : ℕ} →
+  {Ω : Type u_1} →
+    AnvBandit.DecayModel n K →
+      AnvBandit.Execution.Params n K →
+        Fin 2 → (Ω → ℕ → Fin n → Bool) → (Ω → ℕ → Fin n → Fin n) → ℕ → Ω → Finset (Fin n) :=
+fun {n K} {Ω} M p lam X J j ω =>
+  if AnvBandit.Absorbing.live M p lam X J j ω then
+    AnvBandit.Execution.holders M.star
+      (AnvBandit.Execution.run p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) (p.phaseEnd j))
+  else Finset.univ
+def AnvBandit.Absorbing.error.{u_1} : {n K : ℕ} →
+  {Ω : Type u_1} →
+    AnvBandit.DecayModel n K →
+      AnvBandit.Execution.Params n K → Fin 2 → (Ω → ℕ → Fin n → Bool) → (Ω → ℕ → Fin n → Fin n) → ℕ → Ω → ℝ :=
+fun {n K} {Ω} M p lam X J j ω =>
+  if
+      AnvBandit.Absorbing.live M p lam X J (j + 1) ω ∧
+        AnvBandit.Absorbing.wrong M.star
+          (AnvBandit.Execution.preBoundary p (AnvBandit.ExecutionLaw.realTape (X ω)) (J ω) (j + 1)) then
+    1
+  else 0
+def AnvBandit.Absorbing.lastPhase : {n K : ℕ} → AnvBandit.Execution.Params n K → ℕ :=
+fun {n K} p => Nat.find ⋯
+def AnvBandit.GlobalRegret.goodLoss : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → Fin 2 → (Fin K → ℝ) → ℝ :=
+fun {n K} M p C lam c =>
+  ∫ (ω : AnvBandit.ExecutionLaw.Path n),
+    AnvBandit.GlobalRegret.goodCost M p lam c ω ∂AnvBandit.ExecutionLaw.executionMeasure M p C lam
+def AnvBandit.concreteKbeta : {n : ℕ} → 0 < n - 1 → AnvBandit.ContactMatrix n → Fin n → ℝ → ℝ → ℕ → ℝ :=
+fun {n} hd C i0 H β r => AnvBandit.Kbeta (AnvBandit.scheduleOmega H β) (AnvBandit.remainingV hd C i0) r
+def AnvBandit.remainingV : {n : ℕ} → 0 < n - 1 → AnvBandit.ContactMatrix n → Fin n → ℕ → ℝ :=
+fun {n} hd C i0 j =>
+  ∑ i,
+    (∫⁻ (ω : ℕ → Fin (n - 1) → Fin n → Fin n),
+        ENNReal.ofReal (max (AnvBandit.sigmaR hd ω i0 i - ↑j) 0) ∂AnvBandit.procMeasure C (n - 1)).toReal
+def AnvBandit.scheduleOmega : ℝ → ℝ → ℕ → ℝ :=
+fun H β ℓ => AnvBandit.posPart (AnvBandit.dEll H β ℓ - AnvBandit.dEll H β (ℓ - 1))
+EXIT_CODE=0

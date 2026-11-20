@@ -1,0 +1,821 @@
+Tue Oct 27 14:27:43 UTC 2026
+1c8ee32467ee4c18369ed10835cce620b80b4526d008e036ce2e398aac5c64a8  AnvBandit/BaselineObserved.lean
+import took 4.43s
+.olean serialization took 341ms
+cumulative profiling times:
+	.olean serialization 341ms
+	attribute application 0.115ms
+	congr simp thm 0.457ms
+	dsimp 11.7ms
+	elaboration 171ms
+	fix level params 0.653ms
+	import 4.43s
+	initialization 37.4ms
+	instantiate metavars 1.15ms
+	interpretation 623ms
+	let-to-have transformation 0.49ms
+	linting 25ms
+	module linting 0.0014ms
+	overlappingInstancesLinter 10.8ms
+	parsing 9.42ms
+	process pre-definitions 5.74ms
+	share common exprs 4.27ms
+	simp 2.36ms
+	tactic execution 141ms
+	tacticAnalysis 37.3ms
+	type checking 60.6ms
+	typeclass inference 658ms
+OBSERVED_EXIT_CODE=0
+1c8ee32467ee4c18369ed10835cce620b80b4526d008e036ce2e398aac5c64a8  AnvBandit/BaselineObserved.lean
+COMMAND: lake env lean AnvBandit/CheckBaseline.lean
+structure AnvBandit.BaselineExecution.LocalState (n K : ℕ) (i : Fin n) : Type
+number of parameters: 3
+fields:
+  AnvBandit.BaselineExecution.LocalState.seed : Fin K
+  AnvBandit.BaselineExecution.LocalState.N : Fin K → ℕ
+  AnvBandit.BaselineExecution.LocalState.Y : Fin K → ℝ
+constructor:
+  AnvBandit.BaselineExecution.LocalState.mk {n K : ℕ} {i : Fin n} (seed : Fin K) (N : Fin K → ℕ) (Y : Fin K → ℝ) :
+    AnvBandit.BaselineExecution.LocalState n K i
+structure AnvBandit.BaselineExecution.State (n K : ℕ) : Type
+number of parameters: 2
+fields:
+  AnvBandit.BaselineExecution.State.nodes : (i : Fin n) → AnvBandit.BaselineExecution.LocalState n K i
+constructor:
+  AnvBandit.BaselineExecution.State.mk {n K : ℕ} (nodes : (i : Fin n) → AnvBandit.BaselineExecution.LocalState n K i) :
+    AnvBandit.BaselineExecution.State n K
+def AnvBandit.BaselineExecution.LocalState.choose : {n K : ℕ} →
+  {i : Fin n} → AnvBandit.BaselineExecution.Params n K → AnvBandit.BaselineExecution.LocalState n K i → Fin K :=
+fun {n K} {i} p s =>
+  if h : s.unseen.Nonempty then s.unseen.min' h
+  else AnvBandit.topArg (AnvBandit.BaselineExecution.LocalState.index p s) s.active ⋯
+def AnvBandit.BaselineExecution.step : {n K : ℕ} →
+  AnvBandit.BaselineExecution.Params n K →
+    ℕ → AnvBandit.BaselineExecution.State n K → (Fin n → ℝ) → (Fin n → Fin n) → AnvBandit.BaselineExecution.State n K :=
+fun {n K} p t s x _j => if t < p.T then AnvBandit.BaselineExecution.observe p s x else s
+def AnvBandit.BaselineLaw.stateMean : {n K : ℕ} →
+  AnvBandit.DecayModel n K →
+    AnvBandit.BaselineExecution.Params n K → Fin 2 → AnvBandit.BaselineExecution.State n K → Fin n → ℝ :=
+fun {n K} M p lam s i =>
+  have k := AnvBandit.BaselineExecution.actions p s i;
+  M.mean k (1 + if lam = 0 then (s.nodes i).N k else ∑ j, (s.nodes j).N k)
+def AnvBandit.BaselineLaw.outcomeDistribution : {n K : ℕ} →
+  AnvBandit.DecayModel n K →
+    AnvBandit.BaselineExecution.Params n K →
+      Fin 2 → AnvBandit.BaselineExecution.State n K → PMF (AnvBandit.BaselineLaw.Outcome n) :=
+fun {n K} M p lam s => PMF.map (fun x => (x, id)) (AnvBandit.BaselineLaw.rewardDistribution M p lam s)
+theorem AnvBandit.BaselineLaw.actual_good_compl_le : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2),
+  (AnvBandit.BaselineLaw.executionMeasure M p lam).real (AnvBandit.BaselineLaw.actualGoodEvent M p lam)ᶜ ≤ p.δ :=
+fun {n K} M p lam =>
+  have h :=
+    AnvBandit.ObservedPrefix.measure_good_compl_le_finite (AnvBandit.BaselineLaw.executionMeasure M p lam)
+      (AnvBandit.BaselineLaw.executionFiltration n)
+      (AnvBandit.BaselineBounds.selected p AnvBandit.BaselineLaw.pathRewards (AnvBandit.BaselineLaw.pathContacts p))
+      (AnvBandit.BaselineBounds.reward AnvBandit.BaselineLaw.pathRewards)
+      (AnvBandit.BaselineBounds.mean M p lam AnvBandit.BaselineLaw.pathRewards (AnvBandit.BaselineLaw.pathContacts p))
+      p.hn p.hK p.hT (fun i k t x => AnvBandit.BaselineLaw.selected_predictable p i k t)
+      (fun i k t x => AnvBandit.BaselineLaw.reward_adapted t i)
+      (fun i k t x => AnvBandit.BaselineLaw.actualMean_predictable M p lam t i)
+      (fun i k t x ω =>
+        id
+          (Bool.casesOn (motive := fun t_1 =>
+            AnvBandit.BaselineLaw.pathRewards ω t i = t_1 →
+              AnvBandit.BaselineLaw.rewardReal (AnvBandit.BaselineLaw.pathRewards ω t i) = 0 ∨
+                AnvBandit.BaselineLaw.rewardReal (AnvBandit.BaselineLaw.pathRewards ω t i) = 1)
+            (AnvBandit.BaselineLaw.pathRewards ω t i)
+            (fun h =>
+              Eq.symm h ▸
+                of_eq_true
+                  (Eq.trans
+                    (congr
+                      (congrArg Or
+                        (Eq.trans (congrFun' (congrArg Eq (ite_cond_eq_false 1 0 Bool.false_eq_true)) 0) (eq_self 0)))
+                      (Eq.trans (congrFun' (congrArg Eq (ite_cond_eq_false 1 0 Bool.false_eq_true)) 1)
+                        zero_ne_one._simp_1))
+                    (or_false True)))
+            (fun h =>
+              Eq.symm h ▸
+                of_eq_true
+                  (Eq.trans
+                    (congr
+                      (congrArg Or
+                        (Eq.trans (congrFun' (congrArg Eq (ite_cond_eq_true 1 0 (eq_self true))) 0)
+                          one_ne_zero._simp_1))
+                      (Eq.trans (congrFun' (congrArg Eq (ite_cond_eq_true 1 0 (eq_self true))) 1) (eq_self 1)))
+                    (or_true False)))
+            (Eq.refl (AnvBandit.BaselineLaw.pathRewards ω t i))))
+      (fun i k t x ω =>
+        AnvBandit.BaselineLaw.actualMean_mem M p lam (AnvBandit.BaselineLaw.pathRewards ω)
+          (AnvBandit.BaselineLaw.pathContacts p ω) t i)
+      (fun i k t x => AnvBandit.BaselineLaw.conditional_reward_mean M p lam t i) p.δ p.hδ.left (LT.lt.le p.hδ.right);
+  Eq.mpr (id ge_iff_le._simp_1)
+    (Eq.mp
+      (congrFun'
+        (congrArg LE.le
+          (congrArg (AnvBandit.BaselineLaw.executionMeasure M p lam).real
+            (congrArg compl
+              (congrArg
+                (AnvBandit.ObservedPrefix.good
+                  (AnvBandit.BaselineBounds.selected p AnvBandit.BaselineLaw.pathRewards
+                    (AnvBandit.BaselineLaw.pathContacts p))
+                  (AnvBandit.BaselineBounds.reward AnvBandit.BaselineLaw.pathRewards)
+                  (AnvBandit.BaselineBounds.mean M p lam AnvBandit.BaselineLaw.pathRewards
+                    (AnvBandit.BaselineLaw.pathContacts p))
+                  p.T)
+                (congrArg Real.log
+                  (congrFun'
+                    (congrArg HDiv.hDiv
+                      (Eq.trans (Nat.cast_mul (2 * n * K) p.T)
+                        (congrFun'
+                          (congrArg HMul.hMul
+                            (Eq.trans (Nat.cast_mul (2 * n) K) (congrFun' (congrArg HMul.hMul (Nat.cast_mul 2 n)) ↑K)))
+                          ↑p.T)))
+                    p.δ))))))
+        p.δ)
+      h)
+theorem AnvBandit.BaselineRegret.weightedLoss_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2) (c : Fin K → ℝ) (cmax : ℝ),
+  (∀ (k : Fin K), 0 ≤ c k) →
+    (∀ (k : Fin K), c k ≤ cmax) →
+      c M.star = 0 →
+        AnvBandit.BaselineRegret.weightedLoss M p lam c ≤
+          min (↑n * cmax * ↑p.T) (M.Flam c (AnvBandit.Execution.Params.L p) lam + p.δ * (↑n * cmax * ↑p.T)) :=
+fun {n K} M p lam c cmax hc hcmax hstar =>
+  le_min
+    (have h :=
+      MeasureTheory.integral_mono_ae (AnvBandit.BaselineRegret.pathCost_integrable M p lam c cmax hc hcmax)
+        (MeasureTheory.integrable_const (↑n * cmax * ↑p.T))
+        (Filter.Eventually.of_forall (AnvBandit.BaselineRegret.pathCost_le p c cmax hcmax));
+    Eq.mpr (id ge_iff_le._simp_1)
+      (Eq.mp
+        (congrArg
+          (LE.le
+            (∫ (x : AnvBandit.BaselineLaw.Path n),
+              AnvBandit.BaselineRegret.pathCost p c x ∂AnvBandit.BaselineLaw.executionMeasure M p lam))
+          (Eq.trans (MeasureTheory.integral_const (↑n * cmax * ↑p.T))
+            (Eq.trans (congrFun' (congrArg HSMul.hSMul MeasureTheory.probReal_univ) (↑n * cmax * ↑p.T))
+              (one_mul (↑n * cmax * ↑p.T)))))
+        h))
+    (have hfail := AnvBandit.BaselineRegret.weightedLoss_le_goodLoss_add_failure M p lam c cmax hc hcmax;
+    have hgood := AnvBandit.BaselineRegret.goodLoss_bound M p lam c cmax hc hcmax hstar;
+    le_of_not_gt fun a =>
+      Mathlib.Tactic.Linarith.lt_irrefl
+        (Eq.mp
+          (congrArg (fun _a => _a < 0)
+            (Mathlib.Tactic.Ring.of_eq
+              (Mathlib.Tactic.Ring.Common.add_congr
+                (Mathlib.Tactic.Ring.Common.add_congr
+                  (Mathlib.Tactic.Ring.Common.sub_congr
+                    (Mathlib.Tactic.Ring.Common.atom_pf (AnvBandit.BaselineRegret.weightedLoss M p lam c) rfl
+                      (Eq.mpr
+                        (id
+                          (congrArg
+                            (fun _a =>
+                              AnvBandit.BaselineRegret.weightedLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                                AnvBandit.BaselineRegret.weightedLoss M p lam c ^ Nat.rawCast 1 * _a)
+                            (Eq.symm rfl)))
+                        (Eq.refl (AnvBandit.BaselineRegret.weightedLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                    (Mathlib.Tactic.Ring.Common.add_congr
+                      (Mathlib.Tactic.Ring.Common.atom_pf (AnvBandit.BaselineRegret.goodLoss M p lam c) rfl
+                        (Eq.mpr
+                          (id
+                            (congrArg
+                              (fun _a =>
+                                AnvBandit.BaselineRegret.goodLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                                  AnvBandit.BaselineRegret.goodLoss M p lam c ^ Nat.rawCast 1 * _a)
+                              (Eq.symm rfl)))
+                          (Eq.refl (AnvBandit.BaselineRegret.goodLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                      (Mathlib.Tactic.Ring.Common.mul_congr
+                        (Mathlib.Tactic.Ring.Common.atom_pf p.δ rfl
+                          (Eq.mpr
+                            (id
+                              (congrArg (fun _a => p.δ ^ Nat.rawCast 1 * Nat.rawCast 1 = p.δ ^ Nat.rawCast 1 * _a)
+                                (Eq.symm rfl)))
+                            (Eq.refl (p.δ ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                        (Mathlib.Tactic.Ring.Common.mul_congr
+                          (Mathlib.Tactic.Ring.Common.mul_congr
+                            (Mathlib.Tactic.Ring.Common.atom_pf (↑n) rfl
+                              (Eq.mpr
+                                (id
+                                  (congrArg (fun _a => ↑n ^ Nat.rawCast 1 * Nat.rawCast 1 = ↑n ^ Nat.rawCast 1 * _a)
+                                    (Eq.symm rfl)))
+                                (Eq.refl (↑n ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                            (Mathlib.Tactic.Ring.Common.atom_pf cmax rfl
+                              (Eq.mpr
+                                (id
+                                  (congrArg (fun _a => cmax ^ Nat.rawCast 1 * Nat.rawCast 1 = cmax ^ Nat.rawCast 1 * _a)
+                                    (Eq.symm rfl)))
+                                (Eq.refl (cmax ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                            (Mathlib.Tactic.Ring.Common.add_mul
+                              (Mathlib.Tactic.Ring.Common.mul_add
+                                (Mathlib.Tactic.Ring.Common.mul_pf_left (↑n) (Nat.rawCast 1)
+                                  (Mathlib.Tactic.Ring.Common.mul_pf_right cmax (Nat.rawCast 1)
+                                    (Mathlib.Meta.NormNum.IsNat.to_raw_eq
+                                      (Mathlib.Meta.NormNum.isNat_mul (Eq.refl HMul.hMul)
+                                        (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1) (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1)
+                                        (Eq.refl 1)))))
+                                (Mathlib.Tactic.Ring.Common.mul_zero (↑n ^ Nat.rawCast 1 * Nat.rawCast 1))
+                                (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                                  (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * Nat.rawCast 1) + 0)))
+                              (Mathlib.Tactic.Ring.Common.zero_mul (cmax ^ Nat.rawCast 1 * Nat.rawCast 1 + 0))
+                              (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                                (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * Nat.rawCast 1) + 0))))
+                          (Mathlib.Tactic.Ring.Common.atom_pf (↑p.T) rfl
+                            (Eq.mpr
+                              (id
+                                (congrArg (fun _a => ↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1 = ↑p.T ^ Nat.rawCast 1 * _a)
+                                  (Eq.symm rfl)))
+                              (Eq.refl (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                          (Mathlib.Tactic.Ring.Common.add_mul
+                            (Mathlib.Tactic.Ring.Common.mul_add
+                              (Mathlib.Tactic.Ring.Common.mul_pf_left (↑n) (Nat.rawCast 1)
+                                (Mathlib.Tactic.Ring.Common.mul_pf_left cmax (Nat.rawCast 1)
+                                  (Mathlib.Tactic.Ring.Common.mul_pf_right (↑p.T) (Nat.rawCast 1)
+                                    (Mathlib.Meta.NormNum.IsNat.to_raw_eq
+                                      (Mathlib.Meta.NormNum.isNat_mul (Eq.refl HMul.hMul)
+                                        (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1) (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1)
+                                        (Eq.refl 1))))))
+                              (Mathlib.Tactic.Ring.Common.mul_zero
+                                (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * Nat.rawCast 1)))
+                              (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                                (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1)) +
+                                  0)))
+                            (Mathlib.Tactic.Ring.Common.zero_mul (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1 + 0))
+                            (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                              (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1)) +
+                                0))))
+                        (Mathlib.Tactic.Ring.Common.add_mul
+                          (Mathlib.Tactic.Ring.Common.mul_add
+                            (Mathlib.Tactic.Ring.Common.mul_pf_left p.δ (Nat.rawCast 1)
+                              (Mathlib.Tactic.Ring.Common.mul_pf_right (↑n) (Nat.rawCast 1)
+                                (Mathlib.Tactic.Ring.Common.mul_pf_right cmax (Nat.rawCast 1)
+                                  (Mathlib.Tactic.Ring.Common.mul_pf_right (↑p.T) (Nat.rawCast 1)
+                                    (Mathlib.Meta.NormNum.IsNat.to_raw_eq
+                                      (Mathlib.Meta.NormNum.isNat_mul (Eq.refl HMul.hMul)
+                                        (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1) (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1)
+                                        (Eq.refl 1)))))))
+                            (Mathlib.Tactic.Ring.Common.mul_zero (p.δ ^ Nat.rawCast 1 * Nat.rawCast 1))
+                            (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                              (p.δ ^ Nat.rawCast 1 *
+                                  (↑n ^ Nat.rawCast 1 *
+                                    (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1))) +
+                                0)))
+                          (Mathlib.Tactic.Ring.Common.zero_mul
+                            (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1)) + 0))
+                          (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                            (p.δ ^ Nat.rawCast 1 *
+                                (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1))) +
+                              0))))
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                        (AnvBandit.BaselineRegret.goodLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1)
+                        (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                          (p.δ ^ Nat.rawCast 1 *
+                              (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1))) +
+                            0))))
+                    (Mathlib.Tactic.Ring.Common.sub_pf
+                      (Mathlib.Tactic.Ring.Common.neg_add
+                        (Mathlib.Tactic.Ring.Common.neg_mul (AnvBandit.BaselineRegret.goodLoss M p lam c)
+                          (Nat.rawCast 1)
+                          (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                            (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                              (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                              (Eq.refl (Int.negOfNat 1)))))
+                        (Mathlib.Tactic.Ring.Common.neg_add
+                          (Mathlib.Tactic.Ring.Common.neg_mul p.δ (Nat.rawCast 1)
+                            (Mathlib.Tactic.Ring.Common.neg_mul (↑n) (Nat.rawCast 1)
+                              (Mathlib.Tactic.Ring.Common.neg_mul cmax (Nat.rawCast 1)
+                                (Mathlib.Tactic.Ring.Common.neg_mul (↑p.T) (Nat.rawCast 1)
+                                  (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                                    (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                                      (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                                      (Eq.refl (Int.negOfNat 1))))))))
+                          Mathlib.Tactic.Ring.Common.neg_zero))
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                        (AnvBandit.BaselineRegret.weightedLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1)
+                        (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                          (AnvBandit.BaselineRegret.goodLoss M p lam c ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast +
+                            (p.δ ^ Nat.rawCast 1 *
+                                (↑n ^ Nat.rawCast 1 *
+                                  (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast))) +
+                              0))))))
+                  (Mathlib.Tactic.Ring.Common.sub_congr
+                    (Mathlib.Tactic.Ring.Common.atom_pf (AnvBandit.BaselineRegret.goodLoss M p lam c) rfl
+                      (Eq.mpr
+                        (id
+                          (congrArg
+                            (fun _a =>
+                              AnvBandit.BaselineRegret.goodLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                                AnvBandit.BaselineRegret.goodLoss M p lam c ^ Nat.rawCast 1 * _a)
+                            (Eq.symm rfl)))
+                        (Eq.refl (AnvBandit.BaselineRegret.goodLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                    (Mathlib.Tactic.Ring.Common.atom_pf (M.Flam c (AnvBandit.Execution.Params.L p) lam) rfl
+                      (Eq.mpr
+                        (id
+                          (congrArg
+                            (fun _a =>
+                              M.Flam c (AnvBandit.Execution.Params.L p) lam ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                                M.Flam c (AnvBandit.Execution.Params.L p) lam ^ Nat.rawCast 1 * _a)
+                            (Eq.symm rfl)))
+                        (Eq.refl (M.Flam c (AnvBandit.Execution.Params.L p) lam ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                    (Mathlib.Tactic.Ring.Common.sub_pf
+                      (Mathlib.Tactic.Ring.Common.neg_add
+                        (Mathlib.Tactic.Ring.Common.neg_mul (M.Flam c (AnvBandit.Execution.Params.L p) lam)
+                          (Nat.rawCast 1)
+                          (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                            (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                              (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                              (Eq.refl (Int.negOfNat 1)))))
+                        Mathlib.Tactic.Ring.Common.neg_zero)
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                        (AnvBandit.BaselineRegret.goodLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1)
+                        (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                          (M.Flam c (AnvBandit.Execution.Params.L p) lam ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast +
+                            0)))))
+                  (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                    (AnvBandit.BaselineRegret.weightedLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1)
+                    (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                      (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (AnvBandit.BaselineRegret.goodLoss M p lam c)
+                        (Nat.rawCast 1)
+                        (Mathlib.Meta.NormNum.IsInt.to_isNat
+                          (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                            (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1))
+                            (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                            (Eq.refl (Int.ofNat 0)))))
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                        (p.δ ^ Nat.rawCast 1 *
+                          (↑n ^ Nat.rawCast 1 *
+                            (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast))))
+                        (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                          (M.Flam c (AnvBandit.Execution.Params.L p) lam ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast +
+                            0))))))
+                (Mathlib.Tactic.Ring.Common.sub_congr
+                  (Mathlib.Tactic.Ring.Common.add_congr
+                    (Mathlib.Tactic.Ring.Common.atom_pf (M.Flam c (AnvBandit.Execution.Params.L p) lam) rfl
+                      (Eq.mpr
+                        (id
+                          (congrArg
+                            (fun _a =>
+                              M.Flam c (AnvBandit.Execution.Params.L p) lam ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                                M.Flam c (AnvBandit.Execution.Params.L p) lam ^ Nat.rawCast 1 * _a)
+                            (Eq.symm rfl)))
+                        (Eq.refl (M.Flam c (AnvBandit.Execution.Params.L p) lam ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                    (Mathlib.Tactic.Ring.Common.mul_congr
+                      (Mathlib.Tactic.Ring.Common.atom_pf p.δ rfl
+                        (Eq.mpr
+                          (id
+                            (congrArg (fun _a => p.δ ^ Nat.rawCast 1 * Nat.rawCast 1 = p.δ ^ Nat.rawCast 1 * _a)
+                              (Eq.symm rfl)))
+                          (Eq.refl (p.δ ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                      (Mathlib.Tactic.Ring.Common.mul_congr
+                        (Mathlib.Tactic.Ring.Common.mul_congr
+                          (Mathlib.Tactic.Ring.Common.atom_pf (↑n) rfl
+                            (Eq.mpr
+                              (id
+                                (congrArg (fun _a => ↑n ^ Nat.rawCast 1 * Nat.rawCast 1 = ↑n ^ Nat.rawCast 1 * _a)
+                                  (Eq.symm rfl)))
+                              (Eq.refl (↑n ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                          (Mathlib.Tactic.Ring.Common.atom_pf cmax rfl
+                            (Eq.mpr
+                              (id
+                                (congrArg (fun _a => cmax ^ Nat.rawCast 1 * Nat.rawCast 1 = cmax ^ Nat.rawCast 1 * _a)
+                                  (Eq.symm rfl)))
+                              (Eq.refl (cmax ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                          (Mathlib.Tactic.Ring.Common.add_mul
+                            (Mathlib.Tactic.Ring.Common.mul_add
+                              (Mathlib.Tactic.Ring.Common.mul_pf_left (↑n) (Nat.rawCast 1)
+                                (Mathlib.Tactic.Ring.Common.mul_pf_right cmax (Nat.rawCast 1)
+                                  (Mathlib.Meta.NormNum.IsNat.to_raw_eq
+                                    (Mathlib.Meta.NormNum.isNat_mul (Eq.refl HMul.hMul)
+                                      (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1) (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1)
+                                      (Eq.refl 1)))))
+                              (Mathlib.Tactic.Ring.Common.mul_zero (↑n ^ Nat.rawCast 1 * Nat.rawCast 1))
+                              (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                                (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * Nat.rawCast 1) + 0)))
+                            (Mathlib.Tactic.Ring.Common.zero_mul (cmax ^ Nat.rawCast 1 * Nat.rawCast 1 + 0))
+                            (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                              (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * Nat.rawCast 1) + 0))))
+                        (Mathlib.Tactic.Ring.Common.atom_pf (↑p.T) rfl
+                          (Eq.mpr
+                            (id
+                              (congrArg (fun _a => ↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1 = ↑p.T ^ Nat.rawCast 1 * _a)
+                                (Eq.symm rfl)))
+                            (Eq.refl (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                        (Mathlib.Tactic.Ring.Common.add_mul
+                          (Mathlib.Tactic.Ring.Common.mul_add
+                            (Mathlib.Tactic.Ring.Common.mul_pf_left (↑n) (Nat.rawCast 1)
+                              (Mathlib.Tactic.Ring.Common.mul_pf_left cmax (Nat.rawCast 1)
+                                (Mathlib.Tactic.Ring.Common.mul_pf_right (↑p.T) (Nat.rawCast 1)
+                                  (Mathlib.Meta.NormNum.IsNat.to_raw_eq
+                                    (Mathlib.Meta.NormNum.isNat_mul (Eq.refl HMul.hMul)
+                                      (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1) (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1)
+                                      (Eq.refl 1))))))
+                            (Mathlib.Tactic.Ring.Common.mul_zero
+                              (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * Nat.rawCast 1)))
+                            (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                              (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1)) +
+                                0)))
+                          (Mathlib.Tactic.Ring.Common.zero_mul (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1 + 0))
+                          (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                            (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1)) +
+                              0))))
+                      (Mathlib.Tactic.Ring.Common.add_mul
+                        (Mathlib.Tactic.Ring.Common.mul_add
+                          (Mathlib.Tactic.Ring.Common.mul_pf_left p.δ (Nat.rawCast 1)
+                            (Mathlib.Tactic.Ring.Common.mul_pf_right (↑n) (Nat.rawCast 1)
+                              (Mathlib.Tactic.Ring.Common.mul_pf_right cmax (Nat.rawCast 1)
+                                (Mathlib.Tactic.Ring.Common.mul_pf_right (↑p.T) (Nat.rawCast 1)
+                                  (Mathlib.Meta.NormNum.IsNat.to_raw_eq
+                                    (Mathlib.Meta.NormNum.isNat_mul (Eq.refl HMul.hMul)
+                                      (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1) (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1)
+                                      (Eq.refl 1)))))))
+                          (Mathlib.Tactic.Ring.Common.mul_zero (p.δ ^ Nat.rawCast 1 * Nat.rawCast 1))
+                          (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                            (p.δ ^ Nat.rawCast 1 *
+                                (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1))) +
+                              0)))
+                        (Mathlib.Tactic.Ring.Common.zero_mul
+                          (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1)) + 0))
+                        (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                          (p.δ ^ Nat.rawCast 1 *
+                              (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1))) +
+                            0))))
+                    (Mathlib.Tactic.Ring.Common.add_pf_add_gt
+                      (p.δ ^ Nat.rawCast 1 *
+                        (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                        (M.Flam c (AnvBandit.Execution.Params.L p) lam ^ Nat.rawCast 1 * Nat.rawCast 1 + 0))))
+                  (Mathlib.Tactic.Ring.Common.atom_pf (AnvBandit.BaselineRegret.weightedLoss M p lam c) rfl
+                    (Eq.mpr
+                      (id
+                        (congrArg
+                          (fun _a =>
+                            AnvBandit.BaselineRegret.weightedLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                              AnvBandit.BaselineRegret.weightedLoss M p lam c ^ Nat.rawCast 1 * _a)
+                          (Eq.symm rfl)))
+                      (Eq.refl (AnvBandit.BaselineRegret.weightedLoss M p lam c ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                  (Mathlib.Tactic.Ring.Common.sub_pf
+                    (Mathlib.Tactic.Ring.Common.neg_add
+                      (Mathlib.Tactic.Ring.Common.neg_mul (AnvBandit.BaselineRegret.weightedLoss M p lam c)
+                        (Nat.rawCast 1)
+                        (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                          (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                            (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                            (Eq.refl (Int.negOfNat 1)))))
+                      Mathlib.Tactic.Ring.Common.neg_zero)
+                    (Mathlib.Tactic.Ring.Common.add_pf_add_gt
+                      (AnvBandit.BaselineRegret.weightedLoss M p lam c ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast)
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                        (p.δ ^ Nat.rawCast 1 *
+                            (↑n ^ Nat.rawCast 1 * (cmax ^ Nat.rawCast 1 * (↑p.T ^ Nat.rawCast 1 * Nat.rawCast 1))) +
+                          (M.Flam c (AnvBandit.Execution.Params.L p) lam ^ Nat.rawCast 1 * Nat.rawCast 1 + 0))))))
+                (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                  (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (AnvBandit.BaselineRegret.weightedLoss M p lam c)
+                    (Nat.rawCast 1)
+                    (Mathlib.Meta.NormNum.IsInt.to_isNat
+                      (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                        (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                        (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1)) (Eq.refl (Int.ofNat 0)))))
+                  (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                    (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero p.δ (Nat.rawCast 1)
+                      (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (↑n) (Nat.rawCast 1)
+                        (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero cmax (Nat.rawCast 1)
+                          (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (↑p.T) (Nat.rawCast 1)
+                            (Mathlib.Meta.NormNum.IsInt.to_isNat
+                              (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                                (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1))
+                                (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                                (Eq.refl (Int.ofNat 0))))))))
+                    (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                      (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (M.Flam c (AnvBandit.Execution.Params.L p) lam)
+                        (Nat.rawCast 1)
+                        (Mathlib.Meta.NormNum.IsInt.to_isNat
+                          (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                            (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1))
+                            (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                            (Eq.refl (Int.ofNat 0)))))
+                      (Mathlib.Tactic.Ring.Common.add_pf_zero_add 0)))))
+              (Mathlib.Tactic.Ring.cast_zero (Mathlib.Meta.NormNum.isNat_ofNat ℝ Nat.cast_zero))))
+          (Mathlib.Tactic.Linarith.add_lt_of_le_of_neg
+            (Mathlib.Tactic.Linarith.add_nonpos (Mathlib.Tactic.Linarith.sub_nonpos_of_le hfail)
+              (Mathlib.Tactic.Linarith.sub_nonpos_of_le hgood))
+            (Mathlib.Tactic.Linarith.sub_neg_of_lt a))))
+theorem AnvBandit.BaselineTrajectory.teamRegret_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2),
+  AnvBandit.BaselineTrajectory.teamRegret M p lam ≤
+    AnvBandit.Uind (↑n * ↑p.T) (M.Gamma lam) (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+      (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam) (p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) :=
+fun {n K} M p lam =>
+  le_min (AnvBandit.BaselineTrajectory.teamRegret_trivial M p lam)
+    (have hconv := AnvBandit.BaselineTrajectory.teamRegret_conversion M p lam;
+    have hbound :=
+      AnvBandit.BaselineRegret.weightedLoss_bound M p lam (M.rho p.T lam) (M.supOthers (M.rho p.T lam))
+        (AnvBandit.DecayModel.rho_nonneg M p.T lam)
+        (AnvBandit.BaselineTrajectory.weight_le_sup M (M.rho p.T lam) (AnvBandit.DecayModel.rho_nonneg M p.T lam)
+          (AnvBandit.DecayModel.rho_star M p.T lam))
+        (AnvBandit.DecayModel.rho_star M p.T lam);
+    le_of_not_gt fun a =>
+      Mathlib.Tactic.Linarith.lt_irrefl
+        (Eq.mp
+          (congrArg (fun _a => _a < 0)
+            (Mathlib.Tactic.Ring.of_eq
+              (Mathlib.Tactic.Ring.Common.add_congr
+                (Mathlib.Tactic.Ring.Common.add_congr
+                  (Mathlib.Tactic.Ring.Common.sub_congr
+                    (Mathlib.Tactic.Ring.Common.atom_pf (AnvBandit.BaselineTrajectory.teamRegret M p lam) rfl
+                      (Eq.mpr
+                        (id
+                          (congrArg
+                            (fun _a =>
+                              AnvBandit.BaselineTrajectory.teamRegret M p lam ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                                AnvBandit.BaselineTrajectory.teamRegret M p lam ^ Nat.rawCast 1 * _a)
+                            (Eq.symm rfl)))
+                        (Eq.refl (AnvBandit.BaselineTrajectory.teamRegret M p lam ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                    (Mathlib.Tactic.Ring.Common.add_congr
+                      (Mathlib.Tactic.Ring.Common.atom_pf (M.Gamma lam) rfl
+                        (Eq.mpr
+                          (id
+                            (congrArg
+                              (fun _a => M.Gamma lam ^ Nat.rawCast 1 * Nat.rawCast 1 = M.Gamma lam ^ Nat.rawCast 1 * _a)
+                              (Eq.symm rfl)))
+                          (Eq.refl (M.Gamma lam ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                      (Mathlib.Tactic.Ring.Common.atom_pf
+                        (AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam)) rfl
+                        (Eq.mpr
+                          (id
+                            (congrArg
+                              (fun _a =>
+                                AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam) ^ Nat.rawCast 1 *
+                                    Nat.rawCast 1 =
+                                  AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam) ^ Nat.rawCast 1 * _a)
+                              (Eq.symm rfl)))
+                          (Eq.refl
+                            (AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam) ^ Nat.rawCast 1 *
+                              Nat.rawCast 1))))
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_lt (M.Gamma lam ^ Nat.rawCast 1 * Nat.rawCast 1)
+                        (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                          (AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam) ^ Nat.rawCast 1 *
+                              Nat.rawCast 1 +
+                            0))))
+                    (Mathlib.Tactic.Ring.Common.sub_pf
+                      (Mathlib.Tactic.Ring.Common.neg_add
+                        (Mathlib.Tactic.Ring.Common.neg_mul (M.Gamma lam) (Nat.rawCast 1)
+                          (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                            (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                              (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                              (Eq.refl (Int.negOfNat 1)))))
+                        (Mathlib.Tactic.Ring.Common.neg_add
+                          (Mathlib.Tactic.Ring.Common.neg_mul
+                            (AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam)) (Nat.rawCast 1)
+                            (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                              (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                                (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                                (Eq.refl (Int.negOfNat 1)))))
+                          Mathlib.Tactic.Ring.Common.neg_zero))
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                        (AnvBandit.BaselineTrajectory.teamRegret M p lam ^ Nat.rawCast 1 * Nat.rawCast 1)
+                        (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                          (M.Gamma lam ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast +
+                            (AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam) ^ Nat.rawCast 1 *
+                                (Int.negOfNat 1).rawCast +
+                              0))))))
+                  (Mathlib.Tactic.Ring.Common.sub_congr
+                    (Mathlib.Tactic.Ring.Common.atom_pf (AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam))
+                      rfl
+                      (Eq.mpr
+                        (id
+                          (congrArg
+                            (fun _a =>
+                              AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam) ^ Nat.rawCast 1 *
+                                  Nat.rawCast 1 =
+                                AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam) ^ Nat.rawCast 1 * _a)
+                            (Eq.symm rfl)))
+                        (Eq.refl
+                          (AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam) ^ Nat.rawCast 1 *
+                            Nat.rawCast 1))))
+                    (Mathlib.Tactic.Ring.Common.atom_pf
+                      (min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                        (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                          p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)))
+                      rfl
+                      (Eq.mpr
+                        (id
+                          (congrArg
+                            (fun _a =>
+                              min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                                      (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                                        p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) ^
+                                    Nat.rawCast 1 *
+                                  Nat.rawCast 1 =
+                                min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                                      (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                                        p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) ^
+                                    Nat.rawCast 1 *
+                                  _a)
+                            (Eq.symm rfl)))
+                        (Eq.refl
+                          (min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                                (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                                  p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) ^
+                              Nat.rawCast 1 *
+                            Nat.rawCast 1))))
+                    (Mathlib.Tactic.Ring.Common.sub_pf
+                      (Mathlib.Tactic.Ring.Common.neg_add
+                        (Mathlib.Tactic.Ring.Common.neg_mul
+                          (min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                            (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                              p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)))
+                          (Nat.rawCast 1)
+                          (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                            (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                              (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                              (Eq.refl (Int.negOfNat 1)))))
+                        Mathlib.Tactic.Ring.Common.neg_zero)
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                        (AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam) ^ Nat.rawCast 1 * Nat.rawCast 1)
+                        (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                          (min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                                  (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                                    p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) ^
+                                Nat.rawCast 1 *
+                              (Int.negOfNat 1).rawCast +
+                            0)))))
+                  (Mathlib.Tactic.Ring.Common.add_pf_add_lt
+                    (AnvBandit.BaselineTrajectory.teamRegret M p lam ^ Nat.rawCast 1 * Nat.rawCast 1)
+                    (Mathlib.Tactic.Ring.Common.add_pf_add_lt (M.Gamma lam ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast)
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                        (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero
+                          (AnvBandit.BaselineRegret.weightedLoss M p lam (M.rho p.T lam)) (Nat.rawCast 1)
+                          (Mathlib.Meta.NormNum.IsInt.to_isNat
+                            (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                              (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1))
+                              (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                              (Eq.refl (Int.ofNat 0)))))
+                        (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                          (min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                                  (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                                    p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) ^
+                                Nat.rawCast 1 *
+                              (Int.negOfNat 1).rawCast +
+                            0))))))
+                (Mathlib.Tactic.Ring.Common.sub_congr
+                  (Mathlib.Tactic.Ring.Common.add_congr
+                    (Mathlib.Tactic.Ring.Common.atom_pf (M.Gamma lam) rfl
+                      (Eq.mpr
+                        (id
+                          (congrArg
+                            (fun _a => M.Gamma lam ^ Nat.rawCast 1 * Nat.rawCast 1 = M.Gamma lam ^ Nat.rawCast 1 * _a)
+                            (Eq.symm rfl)))
+                        (Eq.refl (M.Gamma lam ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                    (Mathlib.Tactic.Ring.Common.atom_pf
+                      (min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                        (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                          p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)))
+                      rfl
+                      (Eq.mpr
+                        (id
+                          (congrArg
+                            (fun _a =>
+                              min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                                      (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                                        p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) ^
+                                    Nat.rawCast 1 *
+                                  Nat.rawCast 1 =
+                                min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                                      (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                                        p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) ^
+                                    Nat.rawCast 1 *
+                                  _a)
+                            (Eq.symm rfl)))
+                        (Eq.refl
+                          (min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                                (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                                  p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) ^
+                              Nat.rawCast 1 *
+                            Nat.rawCast 1))))
+                    (Mathlib.Tactic.Ring.Common.add_pf_add_lt (M.Gamma lam ^ Nat.rawCast 1 * Nat.rawCast 1)
+                      (Mathlib.Tactic.Ring.Common.add_pf_zero_add
+                        (min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                                (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                                  p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) ^
+                              Nat.rawCast 1 *
+                            Nat.rawCast 1 +
+                          0))))
+                  (Mathlib.Tactic.Ring.Common.atom_pf (AnvBandit.BaselineTrajectory.teamRegret M p lam) rfl
+                    (Eq.mpr
+                      (id
+                        (congrArg
+                          (fun _a =>
+                            AnvBandit.BaselineTrajectory.teamRegret M p lam ^ Nat.rawCast 1 * Nat.rawCast 1 =
+                              AnvBandit.BaselineTrajectory.teamRegret M p lam ^ Nat.rawCast 1 * _a)
+                          (Eq.symm rfl)))
+                      (Eq.refl (AnvBandit.BaselineTrajectory.teamRegret M p lam ^ Nat.rawCast 1 * Nat.rawCast 1))))
+                  (Mathlib.Tactic.Ring.Common.sub_pf
+                    (Mathlib.Tactic.Ring.Common.neg_add
+                      (Mathlib.Tactic.Ring.Common.neg_mul (AnvBandit.BaselineTrajectory.teamRegret M p lam)
+                        (Nat.rawCast 1)
+                        (Mathlib.Meta.NormNum.IsInt.to_raw_eq
+                          (Mathlib.Meta.NormNum.isInt_neg (Eq.refl Neg.neg)
+                            (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                            (Eq.refl (Int.negOfNat 1)))))
+                      Mathlib.Tactic.Ring.Common.neg_zero)
+                    (Mathlib.Tactic.Ring.Common.add_pf_add_gt
+                      (AnvBandit.BaselineTrajectory.teamRegret M p lam ^ Nat.rawCast 1 * (Int.negOfNat 1).rawCast)
+                      (Mathlib.Tactic.Ring.Common.add_pf_add_zero
+                        (M.Gamma lam ^ Nat.rawCast 1 * Nat.rawCast 1 +
+                          (min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                                  (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                                    p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) ^
+                                Nat.rawCast 1 *
+                              Nat.rawCast 1 +
+                            0))))))
+                (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                  (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (AnvBandit.BaselineTrajectory.teamRegret M p lam)
+                    (Nat.rawCast 1)
+                    (Mathlib.Meta.NormNum.IsInt.to_isNat
+                      (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                        (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                        (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1)) (Eq.refl (Int.ofNat 0)))))
+                  (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                    (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero (M.Gamma lam) (Nat.rawCast 1)
+                      (Mathlib.Meta.NormNum.IsInt.to_isNat
+                        (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                          (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1))
+                          (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                          (Eq.refl (Int.ofNat 0)))))
+                    (Mathlib.Tactic.Ring.Common.add_pf_add_overlap_zero
+                      (Mathlib.Tactic.Ring.Common.add_overlap_pf_zero
+                        (min (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+                          (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam +
+                            p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)))
+                        (Nat.rawCast 1)
+                        (Mathlib.Meta.NormNum.IsInt.to_isNat
+                          (Mathlib.Meta.NormNum.isInt_add (Eq.refl HAdd.hAdd)
+                            (Mathlib.Meta.NormNum.IsInt.of_raw ℝ (Int.negOfNat 1))
+                            (Mathlib.Meta.NormNum.IsNat.to_isInt (Mathlib.Meta.NormNum.IsNat.of_raw ℝ 1))
+                            (Eq.refl (Int.ofNat 0)))))
+                      (Mathlib.Tactic.Ring.Common.add_pf_zero_add 0)))))
+              (Mathlib.Tactic.Ring.cast_zero (Mathlib.Meta.NormNum.isNat_ofNat ℝ Nat.cast_zero))))
+          (Mathlib.Tactic.Linarith.add_lt_of_le_of_neg
+            (Mathlib.Tactic.Linarith.add_nonpos (Mathlib.Tactic.Linarith.sub_nonpos_of_le hconv)
+              (Mathlib.Tactic.Linarith.sub_nonpos_of_le hbound))
+            (Mathlib.Tactic.Linarith.sub_neg_of_lt a))))
+theorem AnvBandit.BaselineObserved.original_teamRegret_bound : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.BaselineExecution.Params n K) (lam : Fin 2) (ν : MeasureTheory.Measure (AnvBandit.BaselineLaw.Path n))
+  [inst : MeasureTheory.IsProbabilityMeasure ν],
+  MeasureTheory.Measure.map (Preorder.frestrictLe 0) ν =
+      MeasureTheory.Measure.map (Preorder.frestrictLe 0) (AnvBandit.BaselineLaw.executionMeasure M p lam) →
+    (∀ t < p.T,
+        ⇑(ProbabilityTheory.condDistrib (fun ω => (ω (t + 1)).1) (Preorder.frestrictLe t)
+              ν) =ᵐ[MeasureTheory.Measure.map (Preorder.frestrictLe t) ν]
+          ⇑(AnvBandit.BaselineLaw.rewardKernel M p lam t)) →
+      (∀ t < p.T, ∀ᵐ (ω : AnvBandit.BaselineLaw.Path n) ∂ν, (ω (t + 1)).2 = id) →
+        AnvBandit.BaselineObserved.originalTeamRegret M p lam ν ≤
+          AnvBandit.Uind (↑n * ↑p.T) (M.Gamma lam) (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+            (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam)
+            (p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) :=
+fun {n K} M p lam ν [MeasureTheory.IsProbabilityMeasure ν] hzero hx habsent =>
+  Eq.mpr
+    (id
+      (congrArg
+        (fun _a =>
+          _a ≤
+            AnvBandit.Uind (↑n * ↑p.T) (M.Gamma lam) (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+              (M.Flam (M.rho p.T lam) (AnvBandit.Execution.Params.L p) lam)
+              (p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)))
+        (AnvBandit.BaselineObserved.original_teamRegret_eq M p lam ν hzero hx habsent)))
+    (AnvBandit.BaselineTrajectory.teamRegret_bound M p lam)
+'AnvBandit.BaselineExecution.contacts_ignored' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.BaselineExecution.action_local_information' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.BaselineLaw.conditional_reward_law' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.BaselineLaw.actual_good_compl_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.BaselineRegret.weightedLoss_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.BaselineTrajectory.teamRegret_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.BaselineObserved.original_teamRegret_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+AUDIT_EXIT_CODE=0
+cfa4ea9eb830ec5bf023a7938d26248d063187aeeb42d4a0b06622421662e1ec  AnvBandit/BaselineComparison.lean
+COMMAND: lake env lean --profile -o .lake/build/lib/lean/AnvBandit/BaselineComparison.olean AnvBandit/BaselineComparison.lean
+import took 3.72s
+.olean serialization took 306ms
+cumulative profiling times:
+	.olean serialization 306ms
+	attribute application 0.0272ms
+	elaboration 32.1ms
+	fix level params 0.0422ms
+	import 3.72s
+	initialization 30.6ms
+	instantiate metavars 0.0787ms
+	interpretation 364ms
+	let-to-have transformation 0.043ms
+	linting 5.76ms
+	module linting 0.00172ms
+	overlappingInstancesLinter 2.12ms
+	parsing 3.29ms
+	process pre-definitions 0.95ms
+	share common exprs 0.213ms
+	tactic execution 5.12ms
+	tacticAnalysis 11.4ms
+	type checking 1.31ms
+	typeclass inference 13.5ms
+COMPARISON_EXIT_CODE=0
+cfa4ea9eb830ec5bf023a7938d26248d063187aeeb42d4a0b06622421662e1ec  AnvBandit/BaselineComparison.lean

@@ -1,0 +1,27 @@
+Tue Oct 27 14:30:23 UTC 2026
+8553affc4b0477d224362213322aa185c97b86fea33a8fe1248f6bb8d2d9af22  AnvBandit/OriginalMain.lean
+COMMAND: lake env lean --profile -o .lake/build/lib/lean/AnvBandit/OriginalMain.olean AnvBandit/OriginalMain.lean
+import took 3.49s
+.olean serialization took 291ms
+cumulative profiling times:
+	.olean serialization 291ms
+	attribute application 0.0287ms
+	elaboration 99.8ms
+	fix level params 0.163ms
+	import 3.49s
+	initialization 29.5ms
+	instantiate metavars 0.0736ms
+	interpretation 397ms
+	let-to-have transformation 0.194ms
+	linting 6.34ms
+	module linting 0.0018ms
+	overlappingInstancesLinter 5.27ms
+	parsing 3.54ms
+	process pre-definitions 0.805ms
+	share common exprs 1.33ms
+	tactic execution 6.76ms
+	tacticAnalysis 28.2ms
+	type checking 11.4ms
+	typeclass inference 267ms
+EXIT_CODE=0
+8553affc4b0477d224362213322aa185c97b86fea33a8fe1248f6bb8d2d9af22  AnvBandit/OriginalMain.lean

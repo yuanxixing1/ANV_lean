@@ -1,0 +1,126 @@
+structure AnvBandit.DecayModel (n K : ℕ) : Type
+number of parameters: 2
+fields:
+  AnvBandit.DecayModel.b : Fin K → ℝ
+  AnvBandit.DecayModel.f : Fin K → ℕ → ℝ
+  AnvBandit.DecayModel.star : Fin K
+  AnvBandit.DecayModel.b_pos : ∀ (k : Fin K), 0 < self.b k
+  AnvBandit.DecayModel.b_le_one : ∀ (k : Fin K), self.b k ≤ 1
+  AnvBandit.DecayModel.f_nonneg : ∀ (k : Fin K) (s : ℕ), 0 ≤ self.f k s
+  AnvBandit.DecayModel.f_anti : ∀ (k : Fin K), Antitone (self.f k)
+  AnvBandit.DecayModel.f_tendsto : ∀ (k : Fin K), Filter.Tendsto (self.f k) Filter.atTop (nhds 0)
+  AnvBandit.DecayModel.f_le_gap : ∀ (k : Fin K) (s : ℕ), self.f k s ≤ 1 - self.b k
+  AnvBandit.DecayModel.b_le_star : ∀ (k : Fin K), self.b k ≤ self.b self.star
+  AnvBandit.DecayModel.star_unique : ∀ (k : Fin K), self.b k = self.b self.star → k = self.star
+  AnvBandit.DecayModel.two_le_n : 2 ≤ n
+  AnvBandit.DecayModel.two_le_K : 2 ≤ K
+constructor:
+  AnvBandit.DecayModel.mk {n K : ℕ} (b : Fin K → ℝ) (f : Fin K → ℕ → ℝ) (star : Fin K) (b_pos : ∀ (k : Fin K), 0 < b k)
+    (b_le_one : ∀ (k : Fin K), b k ≤ 1) (f_nonneg : ∀ (k : Fin K) (s : ℕ), 0 ≤ f k s)
+    (f_anti : ∀ (k : Fin K), Antitone (f k)) (f_tendsto : ∀ (k : Fin K), Filter.Tendsto (f k) Filter.atTop (nhds 0))
+    (f_le_gap : ∀ (k : Fin K) (s : ℕ), f k s ≤ 1 - b k) (b_le_star : ∀ (k : Fin K), b k ≤ b star)
+    (star_unique : ∀ (k : Fin K), b k = b star → k = star) (two_le_n : 2 ≤ n) (two_le_K : 2 ≤ K) :
+    AnvBandit.DecayModel n K
+structure AnvBandit.Execution.Params (n K : ℕ) : Type
+number of parameters: 2
+fields:
+  AnvBandit.Execution.Params.hn : 2 ≤ n
+  AnvBandit.Execution.Params.hK : 2 ≤ K
+  AnvBandit.Execution.Params.T : ℕ
+  AnvBandit.Execution.Params.hT : 1 ≤ self.T
+  AnvBandit.Execution.Params.h : ℕ
+  AnvBandit.Execution.Params.hh : 1 ≤ self.h
+  AnvBandit.Execution.Params.H : ℕ
+  AnvBandit.Execution.Params.hH : 1 ≤ self.H
+  AnvBandit.Execution.Params.hdiv : self.h ∣ self.H
+  AnvBandit.Execution.Params.δ : ℝ
+  AnvBandit.Execution.Params.hδ : 0 < self.δ ∧ self.δ < 1
+  AnvBandit.Execution.Params.β : ℝ
+  AnvBandit.Execution.Params.hβ : 1 < self.β
+constructor:
+  AnvBandit.Execution.Params.mk {n K : ℕ} (hn : 2 ≤ n) (hK : 2 ≤ K) (T : ℕ) (hT : 1 ≤ T) (h : ℕ) (hh : 1 ≤ h) (H : ℕ)
+    (hH : 1 ≤ H) (hdiv : h ∣ H) (δ : ℝ) (hδ : 0 < δ ∧ δ < 1) (β : ℝ) (hβ : 1 < β) : AnvBandit.Execution.Params n K
+structure AnvBandit.ContactMatrix (n : ℕ) : Type
+number of parameters: 1
+fields:
+  AnvBandit.ContactMatrix.P : Fin n → Fin n → ℝ
+  AnvBandit.ContactMatrix.nonneg : ∀ (i j : Fin n), 0 ≤ self.P i j
+  AnvBandit.ContactMatrix.row_sum : ∀ (i : Fin n), ∑ j, self.P i j = 1
+  AnvBandit.ContactMatrix.pmin : ℝ
+  AnvBandit.ContactMatrix.pmin_pos : 0 < self.pmin
+  AnvBandit.ContactMatrix.le_pmin : ∀ (i j : Fin n), 0 < self.P i j → self.pmin ≤ self.P i j
+  AnvBandit.ContactMatrix.irreducible : ∀ (a b : Fin n), Relation.ReflTransGen (fun x y => 0 < self.P y x) a b
+constructor:
+  AnvBandit.ContactMatrix.mk {n : ℕ} (P : Fin n → Fin n → ℝ) (nonneg : ∀ (i j : Fin n), 0 ≤ P i j)
+    (row_sum : ∀ (i : Fin n), ∑ j, P i j = 1) (pmin : ℝ) (pmin_pos : 0 < pmin)
+    (le_pmin : ∀ (i j : Fin n), 0 < P i j → pmin ≤ P i j)
+    (irreducible : ∀ (a b : Fin n), Relation.ReflTransGen (fun x y => 0 < P y x) a b) : AnvBandit.ContactMatrix n
+structure AnvBandit.Props : Type
+number of parameters: 0
+fields:
+  AnvBandit.Props.Pβ : ℝ
+  AnvBandit.Props.Aβ : ℝ
+  AnvBandit.Props.M1 : ℝ
+  AnvBandit.Props.DP : ℝ
+  AnvBandit.Props.Kβ : ℝ
+constructor:
+  AnvBandit.Props.mk (Pβ Aβ M1 DP Kβ : ℝ) : AnvBandit.Props
+def AnvBandit.Main.actualCaps : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → AnvBandit.Props :=
+fun {n K} M p C =>
+  {
+    Pβ :=
+      min (↑p.T)
+        (AnvBandit.Pbeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H)
+          (↑(AnvBandit.ActualPropagation.preparation M p)) p.β),
+    Aβ :=
+      AnvBandit.Abeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H) (↑(AnvBandit.ActualPropagation.preparation M p))
+        p.β ↑p.T,
+    M1 := AnvBandit.M1 ⋯ C (AnvBandit.Execution.holder p M.star),
+    DP := AnvBandit.DP ⋯ ⋯ C (AnvBandit.Execution.holder p M.star),
+    Kβ :=
+      AnvBandit.concreteKbeta ⋯ C (AnvBandit.Execution.holder p M.star) (↑p.H) p.β
+        (AnvBandit.ActualPropagation.preparation M p) }
+def AnvBandit.Main.actualEcost : {n K : ℕ} →
+  AnvBandit.DecayModel n K → AnvBandit.Execution.Params n K → AnvBandit.ContactMatrix n → Fin 2 → (Fin K → ℝ) → ℝ :=
+fun {n K} M p C lam c =>
+  AnvBandit.Ecost (AnvBandit.Eglob n (M.supOthers c) (AnvBandit.Main.actualCaps M p C).Pβ (M.Clam c p.L 0 lam))
+    (AnvBandit.Enode (M.supOthers c) (AnvBandit.Main.actualCaps M p C).Aβ
+      (M.Clam c p.L (AnvBandit.Main.actualCaps M p C).DP lam))
+    (AnvBandit.Epot (M.Flam c p.L lam) (M.supOthers c) (AnvBandit.Main.actualCaps M p C).M1
+      (M.Flam (AnvBandit.Absorbing.unitCost M) p.L lam) (AnvBandit.Main.actualCaps M p C).Kβ)
+def AnvBandit.Main.canonicalContact : {n K : ℕ} →
+  AnvBandit.Execution.Params n K →
+    (P : Fin n → Fin n → ℝ) →
+      (∀ (i j : Fin n), 0 ≤ P i j) →
+        (∀ (i : Fin n), ∑ j, P i j = 1) →
+          (∀ (a b : Fin n), Relation.ReflTransGen (fun x y => 0 < P x y) a b) → AnvBandit.ContactMatrix n :=
+fun {n K} p P hP hrow hirr => AnvBandit.ContactMatrix.ofStochasticIrreducible ⋯ P hP hrow ⋯
+theorem AnvBandit.Main.theorem_C_4 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K)
+  (C : AnvBandit.ContactMatrix n) (lam : Fin 2) (c : Fin K → ℝ),
+  (∀ (k : Fin K), 0 ≤ c k) →
+    c M.star = 0 →
+      AnvBandit.GlobalRegret.weightedLoss M p C lam c ≤
+        min (↑n * M.supOthers c * ↑p.T) (AnvBandit.Main.actualEcost M p C lam c + p.δ * (↑n * M.supOthers c * ↑p.T)) :=
+⋯
+theorem AnvBandit.Main.theorem_4_1 : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K) (p : AnvBandit.Execution.Params n K)
+  (C : AnvBandit.ContactMatrix n) (lam : Fin 2),
+  AnvBandit.TrajectoryExpectation.teamRegret M p C lam ≤
+    AnvBandit.Uco (↑n * ↑p.T) (M.Gamma lam) (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+      (AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam)) (p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) :=
+⋯
+theorem AnvBandit.Main.theorem_4_1_canonical : ∀ {n K : ℕ} (M : AnvBandit.DecayModel n K)
+  (p : AnvBandit.Execution.Params n K) (P : Fin n → Fin n → ℝ) (hP : ∀ (i j : Fin n), 0 ≤ P i j)
+  (hrow : ∀ (i : Fin n), ∑ j, P i j = 1) (hirr : ∀ (a b : Fin n), Relation.ReflTransGen (fun x y => 0 < P x y) a b)
+  (lam : Fin 2),
+  have C := AnvBandit.Main.canonicalContact p P hP hrow hirr;
+  AnvBandit.TrajectoryExpectation.teamRegret M p C lam ≤
+    AnvBandit.Uco (↑n * ↑p.T) (M.Gamma lam) (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)
+      (AnvBandit.Main.actualEcost M p C lam (M.rho p.T lam)) (p.δ * (↑n * M.supOthers (M.rho p.T lam) * ↑p.T)) :=
+⋯
+'AnvBandit.Main.actualCaps' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Main.canonicalContact' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Main.theorem_C_4' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Main.theorem_4_1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'AnvBandit.Main.theorem_4_1_canonical' depends on axioms: [propext, Classical.choice, Quot.sound]
+EXIT_CODE=0

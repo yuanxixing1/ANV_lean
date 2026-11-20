@@ -1,0 +1,8 @@
+AnvBandit/ActualNodeExpectation.lean:62:10: warning: This simp argument is unused:
+  μ
+
+Hint: Omit it from the simp argument list.
+  simp ̵[̵μ̵]̵
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+EXIT_CODE=0

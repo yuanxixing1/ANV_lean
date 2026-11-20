@@ -1,0 +1,32 @@
+Tue Oct 27 12:27:25 UTC 2026
+Single-process import Mathlib diagnostic
+    PID    SPID    PPID STAT     ELAPSED     TIME WCHAN                     COMMAND
+      1       1       0 Ss         00:10 00:00:00 do_wait                   codex
+      2       2       1 S          00:10 00:00:00 do_wait                   bash
+      9       9       2 S          00:10 00:00:00 x64_sys_rt_sigsuspend     timeout
+     11      11       9 Sl         00:10 00:00:00 futex_wait                lean
+     11      12       9 Sl         00:09 00:00:00 do_epoll_wait             lean
+     11      13       9 Dl         00:09 00:00:01 folio_wait_bit_common     lean
+     14      14       2 R          00:00 00:00:00 -                         ps
+     15      15       2 S          00:00 00:00:00 anon_pipe_read            tail
+    PID    SPID    PPID STAT     ELAPSED     TIME WCHAN                     COMMAND
+      1       1       0 Ss         00:20 00:00:00 do_wait                   codex
+      2       2       1 S          00:20 00:00:00 do_wait                   bash
+      9       9       2 S          00:20 00:00:00 x64_sys_rt_sigsuspend     timeout
+     11      11       9 Sl         00:20 00:00:00 futex_wait                lean
+     11      12       9 Sl         00:20 00:00:00 do_epoll_wait             lean
+     11      13       9 Dl         00:19 00:00:04 -                         lean
+     17      17       2 R          00:00 00:00:00 -                         ps
+     18      18       2 S          00:00 00:00:00 anon_pipe_read            tail
+    PID    SPID    PPID STAT     ELAPSED     TIME WCHAN                     COMMAND
+      1       1       0 Ss         00:30 00:00:00 do_wait                   codex
+      2       2       1 S          00:30 00:00:00 do_wait                   bash
+      9       9       2 S          00:30 00:00:00 x64_sys_rt_sigsuspend     timeout
+     11      11       9 Sl         00:30 00:00:00 futex_wait                lean
+     11      12       9 Sl         00:30 00:00:00 do_epoll_wait             lean
+     11      13       9 Dl         00:29 00:00:05 folio_wait_bit_common     lean
+     20      20       2 R          00:00 00:00:00 -                         ps
+     21      21       2 S          00:00 00:00:00 anon_pipe_read            tail
+Nat : Type
+EXIT_CODE=0
+Tue Oct 27 12:28:05 UTC 2026

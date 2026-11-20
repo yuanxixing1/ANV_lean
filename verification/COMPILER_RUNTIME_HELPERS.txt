@@ -1,0 +1,19 @@
+Exact inventory extracted from the final successful CLEAN_AXIOMS.txt.
+
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.syncVal._unsafe_rec parent=AnvBandit.syncVal safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.RunModel.infSet._unsafe_rec parent=AnvBandit.RunModel.infSet safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.Execution.run._unsafe_rec parent=AnvBandit.Execution.run safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.Inform._unsafe_rec parent=AnvBandit.Inform safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.ExecutionLaw.historyDistribution._unsafe_rec parent=AnvBandit.ExecutionLaw.historyDistribution safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.StateProc._unsafe_rec parent=AnvBandit.StateProc safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.blockState._unsafe_rec parent=AnvBandit.blockState safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.gen._unsafe_rec parent=AnvBandit.gen safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.Execution.removedDuring._unsafe_rec parent=AnvBandit.Execution.removedDuring safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.BaselineExecution.run._unsafe_rec parent=AnvBandit.BaselineExecution.run safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.Greedy.counts._unsafe_rec parent=AnvBandit.Greedy.counts safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.Greedy.dp._unsafe_rec parent=AnvBandit.Greedy.dp safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.Greedy.payoff._unsafe_rec parent=AnvBandit.Greedy.payoff safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.Greedy.policy._unsafe_rec parent=AnvBandit.Greedy.policy safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.ExponentialDP.value._unsafe_rec parent=AnvBandit.ExponentialDP.value safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.PublicDP.W._unsafe_rec parent=AnvBandit.PublicDP.W safe_def=true recursive_tag=true type_levels_equal=true same_module=true
+AUDIT_COMPILER_RUNTIME_HELPER AnvBandit.PublicDP.path._unsafe_rec parent=AnvBandit.PublicDP.path safe_def=true recursive_tag=true type_levels_equal=true same_module=true

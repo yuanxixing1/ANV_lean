@@ -1,0 +1,92 @@
+Tue Oct 27 12:28:13 UTC 2026
+COMMAND: lake build
+✔ [8655/8683] Built AnvBandit.Numerics (22s)
+✔ [8656/8683] Built AnvBandit.Prefix (26s)
+✔ [8657/8683] Built AnvBandit.Model (36s)
+✔ [8658/8683] Built AnvBandit.Exponential (50s)
+✔ [8659/8683] Built AnvBandit.Batch (43s)
+✔ [8660/8683] Built AnvBandit.Serial (43s)
+✔ [8661/8683] Built AnvBandit.Schedule (55s)
+✔ [8662/8683] Built AnvBandit.Regret (82s)
+✔ [8663/8683] Built AnvBandit.Constants (37s)
+✔ [8664/8683] Built AnvBandit.Prob (79s)
+⚠ [8665/8683] Built AnvBandit.Bench (81s)
+warning: AnvBandit/Bench.lean:55:15: This simp argument is unused:
+  Finset.mem_univ
+
+Hint: Omit it from the simp argument list.
+  simp only [̵F̵i̵n̵s̵e̵t̵.̵m̵e̵m̵_̵u̵n̵i̵v̵,̵ ̵t̵r̵u̵e̵_̵a̵n̵d̵]̵[̲t̲r̲u̲e̲_̲a̲n̲d̲]̲
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+warning: AnvBandit/Bench.lean:55:32: This simp argument is unused:
+  true_and
+
+Hint: Omit it from the simp argument list.
+  simp only [Finset.mem_univ,̵ ̵t̵r̵u̵e̵_̵a̵n̵d̵]
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+warning: AnvBandit/Bench.lean:87:52: This simp argument is unused:
+  Nat.add_zero
+
+Hint: Omit it from the simp argument list.
+  simp only [Nat.cast_zero, zero_mul, zero_add, N̵a̵t̵.̵a̵d̵d̵_̵z̵e̵r̵o̵,̵ ̵Finset.range_zero, Finset.sum_empty, add_zero,
+  ̲  ̲ ̲ ̲ ̲ ̲ ̲ ̲sub_zero]
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+warning: AnvBandit/Bench.lean:88:36: This simp argument is unused:
+  sub_zero
+
+Hint: Omit it from the simp argument list.
+  simp only [Nat.cast_zero, zero_mul, zero_add, Nat.add_zero, Finset.range_zero,
+          Finset.sum_empty, add_zero,̵ ̵s̵u̵b̵_̵z̵e̵r̵o̵]
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+✔ [8666/8683] Built AnvBandit.Contact (35s)
+⚠ [8667/8683] Built AnvBandit.ScheduleLower (50s)
+warning: AnvBandit/ScheduleLower.lean:114:4: `push_neg` has been deprecated. Prefer using `push Not` instead.
+If you'd rather continue using `push_neg` in your project, you can implement it as follows:
+```
+open Lean.Parser.Tactic in
+macro "push_neg" cfg:optConfig loc:(location)? : tactic =>
+  `(tactic| push $cfg:optConfig Not $[$loc]?)
+```
+✔ [8668/8683] Built AnvBandit.Adaptive (49s)
+⚠ [8669/8683] Built AnvBandit.Propagation (62s)
+warning: AnvBandit/Propagation.lean:874:10: `mul_le_mul_right'` has been deprecated: Use `mul_le_mul_left` instead
+✔ [8670/8683] Built AnvBandit.HeadTail (30s)
+✔ [8671/8683] Built AnvBandit.Moments (53s)
+✔ [8672/8683] Built AnvBandit.PotentialFn (73s)
+✔ [8673/8683] Built AnvBandit.AlgCount (63s)
+⚠ [8674/8683] Built AnvBandit.IdealV (63s)
+warning: AnvBandit/IdealV.lean:40:19: This simp argument is unused:
+  Finset.mem_filter
+
+Hint: Omit it from the simp argument list.
+  simp ̵[̵F̵i̵n̵s̵e̵t̵.̵m̵e̵m̵_̵f̵i̵l̵t̵e̵r̵]̵
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+warning: AnvBandit/IdealV.lean:205:17: This simp argument is unused:
+  Finset.mem_filter
+
+Hint: Omit it from the simp argument list.
+  simp ̵[̵F̵i̵n̵s̵e̵t̵.̵m̵e̵m̵_̵f̵i̵l̵t̵e̵r̵]̵
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+warning: AnvBandit/IdealV.lean:228:17: This simp argument is unused:
+  Finset.mem_filter
+
+Hint: Omit it from the simp argument list.
+  simp ̵[̵F̵i̵n̵s̵e̵t̵.̵m̵e̵m̵_̵f̵i̵l̵t̵e̵r̵]̵
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+✔ [8675/8683] Built AnvBandit.Terminal (88s)
+✔ [8676/8683] Built AnvBandit.PublicBudget (61s)
+✔ [8677/8683] Built AnvBandit.NodeCost (40s)
+✔ [8678/8683] Built AnvBandit.Potential (42s)
+✔ [8679/8683] Built AnvBandit.AlgLine (32s)
+✔ [8680/8683] Built AnvBandit.Statements (45s)
+✔ [8681/8683] Built AnvBandit.Explicit (60s)
+✔ [8682/8683] Built AnvBandit (38s)
+Build completed successfully (8683 jobs).
+
+EXIT_CODE=0

@@ -1,0 +1,12 @@
+UTC_START 2026-10-27T16:11:40.246491+00:00
+CWD /workspace/scratch/ff8a080f48f6/anv_clean_verify
+COMMAND lean --version
+Lean (version 4.32.2, x86_64-unknown-linux-gnu, commit f3b06c705e6c85f5314019d5d3baab0fec5b580c, Release)
+EXIT_CODE 0
+UTC_END 2026-10-27T16:11:40.282890+00:00
+UTC_START 2026-10-27T16:11:40.283131+00:00
+CWD /workspace/scratch/ff8a080f48f6/anv_clean_verify
+COMMAND lake --version
+Lake version 5.0.0-src+f3b06c7 (Lean version 4.32.2)
+EXIT_CODE 0
+UTC_END 2026-10-27T16:11:40.328010+00:00
