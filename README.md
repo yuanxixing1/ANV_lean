@@ -73,3 +73,5 @@ python experiments/ANV_comparison_extended_English.py
 可将脚本配置中的 `QUICK_CHECK` 设为 `True` 进行短规模检查。脚本默认在所在目录的 `anv_results/` 保存 PNG 图和 CSV 数据。
 
 `RELEASE_SHA256.txt` 是原始发布包的历史清单。本仓库新增了实验脚本和 Windows 复现材料，补充了本页说明与 Git 配置，并遮盖了部分历史文档和日志中的本机用户名。两套 `SOURCE_SHA256.txt` 中的源码和配置可按原有哈希核对。
+
+两版论文 PDF 与历史输入 ZIP 保存在原始归档中。文件版本及历史校验值见 [SPEC_VERSION.md](SPEC_VERSION.md)。
